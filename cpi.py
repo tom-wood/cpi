@@ -1,7 +1,4 @@
-#Has a host of functions for importing data from Polaris beamtimes and the
-#Dataset class for plotting, summing & exporting reduced data.
-#This version written by Tom Wood (thomas.wood@stfc.ac.uk) 13/09/2016
-#Changes made this version: get_scan_times can now return average beam currents
+#Version 0.1.0-alpha serious modification of Dataset class
 
 import numpy as np
 import matplotlib as mpl
@@ -10,6 +7,7 @@ import pandas as pd #used mainly for the pd.read_csv function (very fast)
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
+
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
 mpl.rc('axes', labelsize=16)#, linewidth=2.0)
@@ -18,6 +16,54 @@ mpl.rc('xtick', labelsize=16)#, direction='out')
 mpl.rc('xtick.major', size=6)#, width=2)
 mpl.rc('ytick.major', size=6)#, width=2)
 plt.rcParams['image.cmap'] = 'afmhot'
+
+class PlotDefaults():
+    def __init__(self):
+        self.reset()
+    def reset(self):
+        mpl.rcParams['mathtext.default'] = 'regular'
+        mpl.rcParams['font.size'] = 16
+        mpl.rc('axes', labelsize=16)
+        mpl.rc('ytick', labelsize=16)
+        mpl.rc('xtick', labelsize=16)
+        mpl.rc('xtick.major', size=6)
+        mpl.rc('ytick.major', size=6)
+        plt.rcParams['image.cmap'] = 'afmhot'
+    def _setp(self, param, value):
+        if param == 'mathtext.default':
+            mpl.rcParams['mathtext.default'] = value
+        elif param == 'font.size':
+            mpl.rcParams['font.size'] = float(value)
+        elif param == 'axes.labelsize':
+            mpl.rc('axes', labelsize=float(value))
+        elif param == 'axes.linewidth':
+            mpl.rc('axes', linewidth=float(value))
+        elif param == 'xtick.labelsize':
+            mpl.rc('xtick', labelsize=float(value))
+        elif param == 'xtick.direction':
+            mpl.rc('xtick', direction=value)
+        elif param == 'xtick.major.size':
+            mpl.rc('xtick.major', size=float(value))
+        elif param == 'xtick.major.width':
+            mpl.rc('xtick.major', width=float(value))
+        elif param == 'ytick.labelsize':
+            mpl.rc('ytick', labelsize=float(value))
+        elif param == 'ytick.direction':
+            mpl.rc('ytick', direction=value)
+        elif param == 'ytick.major.size':
+            mpl.rc('ytick.major', size=float(value))
+        elif param == 'ytick.major.width':
+            mpl.rc('ytick.major', width=float(value))
+        elif param == 'cmap':
+            plt.rcParams['image.cmap'] = value
+        else:
+            print 'Parameter %s not recognized' % (param)
+    def setp(self, param, value):
+        if type(param) == list or type(param) == type(tuple):
+            for i, p in enumerate(param):
+                self._setp(p, value[i])
+        else:
+            self._setp(param, value)
 
 #set up a new class called Dataset, based on the list type
 class Dataset(list):
