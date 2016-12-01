@@ -1024,7 +1024,8 @@ def get_igan_data(filepath_igan, igan_number, first_file_number,
     """
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 
               'Oct', 'Nov', 'Dec']
-    igan_number = ''.join(['0'] * len(str(igan_number))) + str(igan_number)
+    igan_number = ''.join(['0'] * (4 - len(str(igan_number)))) + \
+            str(igan_number)
     igan_fpath = filepath_igan + 'Sample_' + igan_number + '/'
     igan_dtimes = []
     igan_types = []
