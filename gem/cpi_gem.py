@@ -1045,7 +1045,7 @@ def get_igan_data(filepath_igan, igan_number, first_file_number,
     igan_datasets = []
     for i, igan_run in enumerate(igan_types):
         it_fname = igan_fpath + igan_run[0] + '/' + igan_run[0] + igan_run[1] + '/' + 'Data.txt'
-        igan_dataset = pd.read_csv(it_fname, header=19, delim_whitespace=True, usecols=[0, 1, 2, 3]).iloc[:-1, :].values
+        igan_dataset = pd.read_csv(it_fname, header=21, delim_whitespace=True, usecols=[0, 1, 2, 3]).iloc[:-1, :].values
         igan_dataset[:, 0] = igan_dataset[:, 0].astype(np.float) / 60 + igan_times[i]
         igan_datasets.append(igan_dataset)
     igan_data = np.row_stack(igan_datasets)
