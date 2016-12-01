@@ -1,7 +1,5 @@
-#Has a host of functions for importing data from Polaris beamtimes and the
+#Has a host of functions for importing data from Gem beamtimes and the
 #Dataset class for plotting, summing & exporting reduced data.
-#This version written by Tom Wood (thomas.wood@stfc.ac.uk) 13/09/2016
-#Changes made this version: get_scan_times can now return average beam currents
 
 import numpy as np
 import matplotlib as mpl
@@ -840,14 +838,14 @@ def get_file_list(filepath):
     result = os.listdir(filepath)
     return [filepath + fl for fl in result]
 
-def get_expt_fnames_all(filepath, expt_numbers, fname_pre='pol', 
-                        file_extension=None, bank_num=5, tof=True):
+def get_expt_fnames_all(filepath, expt_numbers, fname_pre='GEM', 
+                        file_extension=None, bank_num=4, tof=True):
     """Return all filenames assuming no beam offs
     
     Args:
         filepath (str): file path
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'pol' for Polaris reduced data
+        fname_pre (str): defaults to 'GEM' for Gem reduced data
         file_extension: if set to string, then overrides default bank_num and
         tof args.
         bank_num (int or str): which bank number's data to load
@@ -860,25 +858,25 @@ def get_expt_fnames_all(filepath, expt_numbers, fname_pre='pol',
             file_extension = '_b' + str(bank_num) + '_D.dat'
     return [filepath + fname_pre + str(n) + file_extension for n in expt_numbers]
 
-def get_log_fnames(filepath, expt_numbers, fname_pre='POL', log_extension='.log'):
+def get_log_fnames(filepath, expt_numbers, fname_pre='GEM', log_extension='.log'):
     """Return all log file names
     
     Args:
         filepath (str): file path
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'POL'
+        fname_pre (str): defaults to 'GEM'
         log_extension: defaults to '.log'
     """
     return [filepath + fname_pre + str(n) + log_extension for n in expt_numbers]
 
-def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None,
-                    bank_num=5, tof=True, missing_nums=False, print_missing=True):
+def get_expt_fnames(filepath, expt_numbers, fname_pre='GEM', file_extension=None,
+                    bank_num=4, tof=True, missing_nums=False, print_missing=True):
     """Return all expt file names which exist in directory
     
     Args:
         filepath (str): file path
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'pol' for Polaris reduced data
+        fname_pre (str): defaults to 'GEM' for Gem reduced data
         file_extension: if set to string, then overrides default bank_num and
         tof args.
         bank_num (int or str): which bank number's data to load
@@ -906,7 +904,7 @@ def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None
         return result
 
 def get_scan_times(first_file_number, last_file_number, filepath, Tstring=None,
-                   fname_pre='POL', log_extension='.log', beam_min=100,
+                   fname_pre='GEM', log_extension='.log', beam_min=100,
                    full_output=True, print_info=True):
     """Return array of scan times relative to start of first file number scan
     
@@ -915,7 +913,7 @@ def get_scan_times(first_file_number, last_file_number, filepath, Tstring=None,
         last_file_number (int): last file number
         filepath (str): file path
         Tstring (str): Can be 'temp1', 'temp2' or 'temp3' if T values wanted
-        fname_pre (str): defaults to 'POL'
+        fname_pre (str): defaults to 'GEM'
         log_extension: defaults to '.log'
         beam_min (float or int): minimum amount of beam required in uA
         full_output (bool): determines whether to return full output, including
@@ -961,8 +959,8 @@ def get_scan_times(first_file_number, last_file_number, filepath, Tstring=None,
         else:
             return scan_times
 
-def get_data(first_file_number, last_file_number, filepath, fname_pre='pol', 
-             file_extension=None, bank_num=5, tof=True, print_missing=True,
+def get_data(first_file_number, last_file_number, filepath, fname_pre='GEM', 
+             file_extension=None, bank_num=4, tof=True, print_missing=True,
              beam_offs=None):
     """Return diffraction data
     
@@ -971,7 +969,7 @@ def get_data(first_file_number, last_file_number, filepath, fname_pre='pol',
         last_file_number (int): last file number
         filepath (str): file path
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'pol' for Polaris reduced data
+        fname_pre (str): defaults to 'GEM' for Gem reduced data
         file_extension: if set to string, then overrides default bank_num and
         tof args.
         bank_num (int or str): which bank number's data to load
@@ -1008,7 +1006,7 @@ def get_data(first_file_number, last_file_number, filepath, fname_pre='pol',
     return Dataset(data)
 
 def get_igan_data(filepath_igan, igan_number, first_file_number, 
-                  last_file_number, filepath=None, fname_pre='POL',
+                  last_file_number, filepath=None, fname_pre='GEM',
                   log_extension='.log'):
     """Return IGAn data for given sample number
     
@@ -1019,7 +1017,7 @@ def get_igan_data(filepath_igan, igan_number, first_file_number,
         last_file_number (int): last file number
         filepath (str): file path for log files
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'POL'
+        fname_pre (str): defaults to 'GEM'
         log_extension: defaults to '.log'
     Returns:
         igan_data (array): columns of time, mass, pressure and temperature
@@ -1053,8 +1051,8 @@ def get_igan_data(filepath_igan, igan_number, first_file_number,
     return igan_data
     
 def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
-           last_file_number=None, filepath=None, fname_pre='pol', file_extensions=None,
-           bank_nums=5, xlabel=u'Q / \u00C5$^{-1}$', 
+           last_file_number=None, filepath=None, fname_pre='GEM', file_extensions=None,
+           bank_nums=4, xlabel=u'Q / \u00C5$^{-1}$', 
            ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, y_range=None,
            linecolours=['g', 'r', 'b', 'm', 'c'], legend=True, legend_loc=0,
            stack_shifts=None, normalize=False):
@@ -1069,7 +1067,7 @@ def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
         last_file_number (int): last file number
         filepath (str): file path
         expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'pol' for Polaris reduced data
+        fname_pre (str): defaults to 'GEM' for Gem reduced data
         file_extensions (list): if set then overrides default bank_num args.
         bank_nums (int or list): which bank number's data to load - also acts as
         labels for graph legend
