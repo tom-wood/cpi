@@ -59,14 +59,77 @@ class PlotDefaults():
         else:
             print 'Parameter %s not recognized' % (param)
     def setp(self, param, value):
+        """Set plotting parameter
+
+        Args:
+            param (str): can be one of 'mathtext.default', 'font.size',
+            'axes.labelsize', 'axes.linewidth', 'xtick.labelsize', 'xtick.direction',
+            'xtick.major.size', 'xtick.major.width', 'ytick.labelsize', 
+            'ytick.direction', 'ytick.major.size', 'ytick.major.width', 'cmap'.
+            value: value that parameter will take
+        """
         if type(param) == list or type(param) == type(tuple):
             for i, p in enumerate(param):
                 self._setp(p, value[i])
         else:
             self._setp(param, value)
 
-#set up a new class called Dataset, based on the list type
-class Dataset(list):
+class Dataset:
+    def __init__(self, first_file_number, last_file_number, beamline):
+        self.first_file_number = first_file_number
+        self.last_file_number = last_file_number
+        self.beamline = beamline
+
+    def get_scan_times(self, filepath=None):
+        """Assign log starts, ends, T and beam current attributes"""
+        lstarts, lends, T_vals, av_bcs =[], [], [], []
+        expt_nums = range(self.first_file_number, 
+                          self.last_file_number + 1)
+        if self.beamline == 'Polaris' or self.beamline == 'POLARIS':
+            pre_fname = 'POL'
+            lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
+        elif self.beamline == 'Gem' or self.beamline == 'GEM':
+            pre_fname = 'GEM'
+            lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
+        else:
+            pre_fname = ''
+        if filepath:
+            fnames = os.listdir(filepath)
+            log_files = [fname in fnames if '.log' in fname]
+        else:
+            log_files = []
+        log_fnames = [filepath + fname_pre + str(n) + log_extension for n in expt_numbers]
+        for lf in log_fnames:
+            if lf not in log_files:
+                print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
+                break
+            log_data = pd.read_csv(f, header=None, delim_whitespace=True,
+                                   names=['Time', 'String', 'Value'])
+            lstarts.append(np.datetime64(log_data.iloc[0, 0]))
+            lends.append(np.datetime64(log_data.iloc[-1, 0]))
+            if Tstring:
+                T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
+                                                                  == 'temp2')])
+            beam_currents = log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
+                                                                == 'TS1')]
+            av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
+            av_bcs.append(av_bc)
+            if av_bc < beam_min:
+                beam_offs.append(expt_numbers[i])
+        T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
+        if print_info:
+            print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), beam_min)
+            print 'Start time = %s' % str(lstarts[0])
+            print 'End time = %s' % str(lends[-1])
+        scan_times = [ls - lstarts[0] for ls in lstarts]
+        scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
+        self.scan_times = scan_times
+        self.lstarts = lstarts
+        self.lends = lends
+        self.av_bcs = av_bcs
+        if Tstring:
+            self.T_vals = T_vals
+
     #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
     def data_xy(self, indices=None):
@@ -877,6 +940,12 @@ class Dataset(list):
         for dset in self:
             print dset.shape
 
+class RunInfo:
+    def __init__(self, first_file_number, last_file_number, filepath):
+        self.first_file_number = first_file_number
+        self.last_file_number = last_file_number
+        self.filepath = filepath
+
 def get_expt_numbers(first_file_number, last_file_number):
     """Return list of experiment numbers"""
     return range(first_file_number, last_file_number + 1, 1)
@@ -1006,6 +1075,7 @@ def get_scan_times(first_file_number, last_file_number, filepath, Tstring=None,
             return scan_times, T_vals
         else:
             return scan_times
+
 
 def get_data(first_file_number, last_file_number, filepath, fname_pre='pol', 
              file_extension=None, bank_num=5, tof=True, print_missing=True,
