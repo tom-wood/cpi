@@ -7,6 +7,7 @@ import pandas as pd #used mainly for the pd.read_csv function (very fast)
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
+import re
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
@@ -75,35 +76,36 @@ class PlotDefaults():
             self._setp(param, value)
 
 class Dataset:
-    def __init__(self, first_file_number, last_file_number, beamline):
+    def __init__(self, first_file_number, last_file_number, beamline, beam_min=100.):
         self.first_file_number = first_file_number
         self.last_file_number = last_file_number
         self.beamline = beamline
+        self.beam_min = beam_min
 
-    def get_scan_times(self, filepath=None):
+    def get_scan_times(self, filepath=None, Tstring=None):
         """Assign log starts, ends, T and beam current attributes"""
-        lstarts, lends, T_vals, av_bcs =[], [], [], []
+        lstarts, lends, T_vals, beam_offs, av_bcs =[], [], [], [], []
         expt_nums = range(self.first_file_number, 
                           self.last_file_number + 1)
         if self.beamline == 'Polaris' or self.beamline == 'POLARIS':
-            pre_fname = 'POL'
+            fname_pre = 'POL'
             lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
         elif self.beamline == 'Gem' or self.beamline == 'GEM':
-            pre_fname = 'GEM'
+            fname_pre = 'GEM'
             lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
         else:
-            pre_fname = ''
+            fname_pre = ''
         if filepath:
             fnames = os.listdir(filepath)
-            log_files = [fname in fnames if '.log' in fname]
+            log_files = [fname for fname in fnames if '.log' in fname]
         else:
             log_files = []
-        log_fnames = [filepath + fname_pre + str(n) + log_extension for n in expt_numbers]
+        log_fnames = [filepath + fname_pre + str(n) + '.log' for n in expt_nums]
         for lf in log_fnames:
-            if lf not in log_files:
+            if re.split(r'\\|/', lf)[-1] not in log_files:
                 print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
-                break
-            log_data = pd.read_csv(f, header=None, delim_whitespace=True,
+                return
+            log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
             lends.append(np.datetime64(log_data.iloc[-1, 0]))
@@ -114,13 +116,14 @@ class Dataset:
                                                                 == 'TS1')]
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
             av_bcs.append(av_bc)
-            if av_bc < beam_min:
-                beam_offs.append(expt_numbers[i])
+            if av_bc < self.beam_min:
+                beam_offs.append(expt_nums[i])
         T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
-        if print_info:
-            print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), beam_min)
-            print 'Start time = %s' % str(lstarts[0])
-            print 'End time = %s' % str(lends[-1])
+        print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), 
+                                                                  self.beam_min)
+        print len(lstarts)
+        print 'Start time = %s' % str(lstarts[0])
+        print 'End time = %s' % str(lends[-1])
         scan_times = [ls - lstarts[0] for ls in lstarts]
         scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
         self.scan_times = scan_times
@@ -129,7 +132,6 @@ class Dataset:
         self.av_bcs = av_bcs
         if Tstring:
             self.T_vals = T_vals
-
     #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
     def data_xy(self, indices=None):
@@ -945,6 +947,58 @@ class RunInfo:
         self.first_file_number = first_file_number
         self.last_file_number = last_file_number
         self.filepath = filepath
+
+class ScanTimes:
+    def __init__(self, filepath=None, Tstring=None):
+        """Assign log starts, ends, T and beam current attributes"""
+        lstarts, lends, T_vals, beam_offs, av_bcs =[], [], [], [], []
+        expt_nums = range(self.first_file_number, 
+                          self.last_file_number + 1)
+        if self.beamline == 'Polaris' or self.beamline == 'POLARIS':
+            fname_pre = 'POL'
+            lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
+        elif self.beamline == 'Gem' or self.beamline == 'GEM':
+            fname_pre = 'GEM'
+            lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
+        else:
+            fname_pre = ''
+        if filepath:
+            fnames = os.listdir(filepath)
+            log_files = [fname for fname in fnames if '.log' in fname]
+        else:
+            log_files = []
+        log_fnames = [filepath + fname_pre + str(n) + '.log' for n in expt_nums]
+        for lf in log_fnames:
+            if re.split(r'\\|/', lf)[-1] not in log_files:
+                print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
+                return
+            log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
+                                   names=['Time', 'String', 'Value'])
+            lstarts.append(np.datetime64(log_data.iloc[0, 0]))
+            lends.append(np.datetime64(log_data.iloc[-1, 0]))
+            if Tstring:
+                T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
+                                                                  == 'temp2')])
+            beam_currents = log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
+                                                                == 'TS1')]
+            av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
+            av_bcs.append(av_bc)
+            if av_bc < self.beam_min:
+                beam_offs.append(expt_nums[i])
+        T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
+        print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), 
+                                                                  self.beam_min)
+        print len(lstarts)
+        print 'Start time = %s' % str(lstarts[0])
+        print 'End time = %s' % str(lends[-1])
+        scan_times = [ls - lstarts[0] for ls in lstarts]
+        scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
+        self.scan_times = scan_times
+        self.lstarts = lstarts
+        self.lends = lends
+        self.av_bcs = av_bcs
+        if Tstring:
+            self.T_vals = T_vals
 
 def get_expt_numbers(first_file_number, last_file_number):
     """Return list of experiment numbers"""
