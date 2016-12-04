@@ -90,9 +90,9 @@ class Dataset:
         self.bank_num = bank_num
         self.tof = tof
 
-    def get_scan_times(self, Tstring=None):
+    def get_scan_times(self, Tstring=None, beam_off_time=120):
         """Assign log starts, ends, T and beam current attributes"""
-        lstarts, lends, T_vals, beam_offs, av_bcs =[], [], [], [], []
+        lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2 = [], [], [], [], [], []
         if self.beamline == 'Polaris':
             fname_pre = 'POL'
             lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
@@ -107,6 +107,7 @@ class Dataset:
         else:
             log_files = []
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in self.expt_nums]
+        ebo_t = None #this is for working out extra beam offs
         for lf in log_fnames:
             if re.split(r'\\|/', lf)[-1] not in log_files:
                 print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
@@ -118,8 +119,22 @@ class Dataset:
             if Tstring:
                 T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
                                                                   == 'temp2')])
-            beam_currents = log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
-                                                                == 'TS1')]
+            bcs = np.where(log_data.iloc[:, 1].values == 'TS1')
+            beam_currents = log_data.iloc[:, 2].values[bcs]
+            bc_times = log_data.iloc[:, 0].values[bcs]
+            for i, bc in enumerate(beam_currents):
+                if float(bc) < self.beam_min:
+                    if ebo_t:
+                        continue
+                    else:
+                        ebo_t = bc_times[i]
+                else:
+                    if ebo_t:
+                        beam_offs2.append((self.expt_nums[i], np.datetime64(bc_times[i])))
+                        ebo_t = None
+                    else:
+                        continue
+            ebts = bc_times[np.where(np.array(beam_currents, dtype='float') < self.beam_min)]
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
             av_bcs.append(av_bc)
             if av_bc < self.beam_min:
@@ -136,6 +151,7 @@ class Dataset:
         self.lends = lends
         self.av_bcs = av_bcs
         self.beam_offs = beam_offs
+        self.beam_offs2 = beam_offs2
         if Tstring:
             self.T_vals = T_vals
 
