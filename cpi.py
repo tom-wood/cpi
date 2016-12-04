@@ -76,31 +76,37 @@ class PlotDefaults():
             self._setp(param, value)
 
 class Dataset:
-    def __init__(self, first_file_number, last_file_number, beamline, beam_min=100.):
-        self.first_file_number = first_file_number
-        self.last_file_number = last_file_number
-        self.beamline = beamline
+    def __init__(self, filepath, first_file_number, last_file_number, beamline, beam_min=100., 
+                 bank_num=4, tof=False):
+        self.filepath = filepath
+        self.expt_nums = range(first_file_number, last_file_number + 1)
+        if beamline == 'POLARIS':
+            self.beamline = 'Polaris'
+        elif beamline == 'GEM':
+            self.beamline == 'Gem'
+        else:
+            self.beamline = beamline
         self.beam_min = beam_min
+        self.bank_num = bank_num
+        self.tof = tof
 
-    def get_scan_times(self, filepath=None, Tstring=None):
+    def get_scan_times(self, Tstring=None):
         """Assign log starts, ends, T and beam current attributes"""
         lstarts, lends, T_vals, beam_offs, av_bcs =[], [], [], [], []
-        expt_nums = range(self.first_file_number, 
-                          self.last_file_number + 1)
-        if self.beamline == 'Polaris' or self.beamline == 'POLARIS':
+        if self.beamline == 'Polaris':
             fname_pre = 'POL'
             lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
-        elif self.beamline == 'Gem' or self.beamline == 'GEM':
+        elif self.beamline == 'Gem':
             fname_pre = 'GEM'
             lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
         else:
             fname_pre = ''
-        if filepath:
-            fnames = os.listdir(filepath)
+        if self.filepath:
+            fnames = os.listdir(self.filepath)
             log_files = [fname for fname in fnames if '.log' in fname]
         else:
             log_files = []
-        log_fnames = [filepath + fname_pre + str(n) + '.log' for n in expt_nums]
+        log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in self.expt_nums]
         for lf in log_fnames:
             if re.split(r'\\|/', lf)[-1] not in log_files:
                 print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
@@ -117,11 +123,10 @@ class Dataset:
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
             av_bcs.append(av_bc)
             if av_bc < self.beam_min:
-                beam_offs.append(expt_nums[i])
+                beam_offs.append(self.expt_nums[i])
         T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
         print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), 
                                                                   self.beam_min)
-        print len(lstarts)
         print 'Start time = %s' % str(lstarts[0])
         print 'End time = %s' % str(lends[-1])
         scan_times = [ls - lstarts[0] for ls in lstarts]
@@ -130,8 +135,64 @@ class Dataset:
         self.lstarts = lstarts
         self.lends = lends
         self.av_bcs = av_bcs
+        self.beam_offs = beam_offs
         if Tstring:
             self.T_vals = T_vals
+
+    def get_expt_fnames_all(self): 
+        if self.tof:
+            suffix = '_b' + str(self.bank_num) + '_TOF.dat'
+        else:
+            suffix = '_b' + str(self.bank_num) + '_D.dat'
+        if self.beamline == 'Polaris':
+            return [self.filepath + 'pol' + str(n) + suffix for n in self.expt_nums]
+        elif self.beamline == 'Gem':
+            return [self.filepath + 'GEM' + str(n) + suffix for n in self.expt_nums]
+        else:
+            return
+
+    def get_expt_fnames(self, print_missing=True):
+        result = []
+        missing = []
+        fnames_all = self.get_expt_fnames_all()
+        file_list = [self.filepath + fl for fl in os.listdir(self.filepath)]
+        for i, f in enumerate(fnames_all):
+            if f in file_list:
+                result.append(f)
+            else:
+                result.append('')
+                missing.append(self.expt_nums[i])
+                if print_missing:
+                    print 'File %d is missing' % self.expt_nums[i]
+                    print f
+        return result
+
+    def get_data(self, print_missing=True):
+        data = []
+        first_missing = False
+        expt_fnames = self.get_expt_fnames(print_missing=print_missing)
+        if self.beam_offs:
+            bo_indices = [self.expt_nums.index(bo) for bo in self.beam_offs]
+            expt_fnames = ['' if i in bo_indices else fname for i, fname in
+                           enumerate(expt_fnames)]
+        for i, f in enumerate(expt_fnames):
+            if f:
+                marker = i
+                data.append(pd.read_csv(f, header=None, delim_whitespace=True,
+                                        names=['x', 'y', 'e']))
+            else:
+                if len(data):
+                    data.append(pd.DataFrame({'x' : data[0]['x'].values, 
+                                              'y' : np.zeros(data[0].shape[0]),
+                                              'e' : np.zeros(data[0].shape[0])}))
+                else:
+                    first_missing=True
+        if first_missing:
+            data.insert(0, pd.DataFrame({'x' : data[marker - 1]['x'].values, 
+                                         'y' : np.zeros(data[marker - 1].shape[0]),
+                                         'e' : np.zeros(data[marker - 1].shape[0])}))
+        self.data = data
+
     #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
     def data_xy(self, indices=None):
@@ -141,23 +202,23 @@ class Dataset:
             indices (list): start and end indices for x data and y data
             respectively [ix0, ix1, iy0, iy1].
         """
-        if len(self) == 0:
+        if len(self.data) == 0:
             return
         if not indices:
-            indices = [0, len(self) - 1, 0, self[0].shape[0] - 1]
+            indices = [0, len(self.data) - 1, 0, self.data[0].shape[0] - 1]
         ix0, ix1, iy0, iy1 = indices
         data_x = np.zeros((iy1 - iy0 + 1, ix1 - ix0 + 1))
         data_y = np.copy(data_x)
-        for i, dset in enumerate(self[ix0:ix1 + 1]):
+        for i, dset in enumerate(self.data[ix0:ix1 + 1]):
             data_x[:, i] = dset['x'].values[iy0:iy1 + 1]
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
         
     def x_range(self):
-        if len(self) == 0:
+        if len(self.data) == 0:
             return
         else:
-            return [self[0].values[0, 0], self[0].values[-1, 0]]
+            return [self.data[0].values[0, 0], self.data[0].values[-1, 0]]
     
     def to_xye(self, filepath='', pre_fname='', post_fname='.dat', sep='\t',
                 file_nums=None, tval=None, t=None):
@@ -179,15 +240,16 @@ class Dataset:
                 file_nums = [file_nums]
             fnames = [filepath + pre_fname + str(f) + post_fname for f in file_nums]
         else:
-            fnames = [filepath + pre_fname + str(f) + post_fname for f in range(len(self))]
+            fnames = [filepath + pre_fname + str(f) + post_fname for f in 
+                      range(len(self.data))]
         if tval:
             if type(t) == type(None):
-                t = np.array(range(len(self)))
+                t = np.array(range(len(self.data)))
             ti = np.abs(t - tval).argmin()
-            self[ti].to_csv(fnames[0], index=False, header=False, sep=sep)
+            self.data[ti].to_csv(fnames[0], index=False, header=False, sep=sep)
             return
-        for i in range(len(self)):
-            self[i].to_csv(fnames[i], index=False, header=False, sep=sep)
+        for i in range(len(self.data)):
+            self.data[i].to_csv(fnames[i], index=False, header=False, sep=sep)
         return        
     
     def sum_dsets(self, sum_num, t=None, T=None):
@@ -202,10 +264,10 @@ class Dataset:
             T_result: average temperature array if T != None
         """
         result = []
-        for i, dset in enumerate(self):
+        for i, dset in enumerate(self.data):
             if i % sum_num == 0:
                 if i:
-                    if i == len(self) - 1:
+                    if i == len(self.data) - 1:
                         new_y = np.column_stack((new_y, dset['y'].values))
                         new_e = np.column_stack((new_e, dset['e'].values**2))
                         new_e = np.sum(new_e, axis=1)**0.5 / (sum_num + 1)
@@ -221,7 +283,7 @@ class Dataset:
             else:
                 new_y = np.column_stack((new_y, dset['y'].values))
                 new_e = np.column_stack((new_e, dset['e'].values**2))
-            if i == len(self) - 1 and i % sum_num != 0:
+            if i == len(self.data) - 1 and i % sum_num != 0:
                 new_e = np.sum(new_e, axis=1)**0.5 / (i % sum_num + 1)
                 new_dset = pd.DataFrame(np.column_stack((dset['x'].values,
                                                          np.mean(new_y, axis=1),
@@ -230,29 +292,29 @@ class Dataset:
                 result.append(new_dset)                
         if type(t) != type(None):
             t_result = []
-            for i in range(len(self)):
+            for i in range(len(self.data)):
                 if i % sum_num == 0:
                     if i:
-                        if i == len(self) - 1:
+                        if i == len(self.data) - 1:
                             t_sum = np.concatenate((t_sum, np.array([t[i]])))
                         t_result.append(np.mean(t_sum))
                     t_sum = np.array([t[i]])
                 else:
                     t_sum = np.concatenate((t_sum, np.array([t[i]])))
-                if i == len(self) - 1 and i % sum_num != 0:
+                if i == len(self.data) - 1 and i % sum_num != 0:
                     t_result.append(np.mean(t_sum))
         if type(T) != type(None):
             T_result = []
-            for i in range(len(self)):
+            for i in range(len(self.data)):
                 if i % sum_num == 0:
                     if i:
                         T_result.append(np.mean(T_sum))
-                        if i == len(self) - 1:
+                        if i == len(self.data) - 1:
                             T_sum = np.concatenate((T_sum, np.array([T[i]])))
                     T_sum = np.array([T[i]])
                 else:
                     T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                if i == len(self) - 1 and i % sum_num != 0:
+                if i == len(self.data) - 1 and i % sum_num != 0:
                     T_result.append(np.mean(T_sum))
         if type(t) != type(None) and type(T) != type(None):
             return Dataset(result), np.array(t_result), np.array(T_result)
@@ -277,10 +339,10 @@ class Dataset:
             y_range (list): y range
             linecolour (str): colour of plotted line"""
         if type(t) == type(None):
-            t = np.array(range(len(self)))
+            t = np.array(range(len(self.data)))
         ti = np.abs(t - tval).argmin()
-        data_x = self[ti]['x'].values
-        data_y = self[ti]['y'].values
+        data_x = self.data[ti]['x'].values
+        data_y = self.data[ti]['y'].values
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         ax.plot(data_x, data_y, color=linecolour)
@@ -306,10 +368,10 @@ class Dataset:
             y_range (list): y range
             linecolour (str): colour of plotted line"""
         if type(t) == type(None):
-            t = np.array(range(len(self)))
+            t = np.array(range(len(self.data)))
         ti = np.abs(t - tval).argmin()
-        data_x = 2 * np.pi / self[ti]['x'].values
-        data_y = self[ti]['y'].values
+        data_x = 2 * np.pi / self.data[ti]['x'].values
+        data_y = self.data[ti]['y'].values
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         ax.plot(data_x, data_y, color=linecolour)
@@ -345,19 +407,20 @@ class Dataset:
         #26/01/16 rewrite
         #data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(len(self)), np.arange(self[0].shape[0]))[0]
+            t = np.meshgrid(np.arange(len(self.data)), 
+                            np.arange(self.data[0].shape[0]))[0]
         elif t.ndim == 1:
-            t = np.meshgrid(t, np.arange(self[0].shape[0]))[0]
+            t = np.meshgrid(t, np.arange(self.data[0].shape[0]))[0]
         if x_range:
             ix0, ix1 = [np.abs(t[0, :] - val).argmin() for val in x_range]
             t = t[:, ix0:ix1 + 1]
         else:
-            ix0, ix1 = 0, len(self) - 1
+            ix0, ix1 = 0, len(self.data) - 1
         if y_range:
-            iy0, iy1 = [np.abs(self[0].values[:, 0] - val).argmin() for val in y_range]
+            iy0, iy1 = [np.abs(self.data[0].values[:, 0] - val).argmin() for val in y_range]
             t = t[iy0:iy1 + 1, :]
         else:
-            iy0, iy1 = 0, self[0].shape[0] - 1
+            iy0, iy1 = 0, self.data[0].shape[0] - 1
         data_y, data_z = self.data_xy(indices=[ix0, ix1, iy0, iy1])
         if z_range:
             data_z = np.clip(data_z, z_range[0], z_range[1])
@@ -774,16 +837,16 @@ class Dataset:
             linecolour (str): colour of plotted line
             interval: interval in ms between each plot"""
         if type(t) == type(None):
-            t = np.array(range(len(self)))
+            t = np.array(range(len(self.data)))
         ti_start, ti_end = [np.abs(t - tval).argmin() for tval in t_range]
         t_indices = range(ti_start, ti_end + 1, 1)
         frames = len(t_indices)
         if type(x_range) == type(None):
-            x_range = [np.array([dset['x'].min() for dset in self]).min(),
-                       np.array([dset['x'].max() for dset in self]).max()]
+            x_range = [np.array([dset['x'].min() for dset in self.data]).min(),
+                       np.array([dset['x'].max() for dset in self.data]).max()]
         if type(y_range) == type(None):
-            y_range = [np.array([dset['y'].min() for dset in self]).min(),
-                       np.array([dset['y'].max() for dset in self]).max()]        
+            y_range = [np.array([dset['y'].min() for dset in self.data]).min(),
+                       np.array([dset['y'].max() for dset in self.data]).max()]        
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         ax.set_xlim(x_range[0], x_range[1])
@@ -802,8 +865,8 @@ class Dataset:
                 return line, run_text, temp_text
             return line, run_text
         def animate(i):
-            x = self[t_indices[i]]['x'].values
-            y = self[t_indices[i]]['y'].values
+            x = self.data[t_indices[i]]['x'].values
+            y = self.data[t_indices[i]]['y'].values
             line.set_data(x, y)
             run_text.set_text('%s = %.0f' % (t_text, t[t_indices[i]]))
             if type(T) != type(None):
@@ -937,68 +1000,13 @@ class Dataset:
             self.anim.save(save_fname, fps=10)
         plt.show()    
         
-    def print_shapes(self):
+    def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
-        for dset in self:
+        for dset in self.data:
             print dset.shape
-
-class RunInfo:
-    def __init__(self, first_file_number, last_file_number, filepath):
-        self.first_file_number = first_file_number
-        self.last_file_number = last_file_number
-        self.filepath = filepath
-
-class ScanTimes:
-    def __init__(self, filepath=None, Tstring=None):
-        """Assign log starts, ends, T and beam current attributes"""
-        lstarts, lends, T_vals, beam_offs, av_bcs =[], [], [], [], []
-        expt_nums = range(self.first_file_number, 
-                          self.last_file_number + 1)
-        if self.beamline == 'Polaris' or self.beamline == 'POLARIS':
-            fname_pre = 'POL'
-            lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
-        elif self.beamline == 'Gem' or self.beamline == 'GEM':
-            fname_pre = 'GEM'
-            lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
-        else:
-            fname_pre = ''
-        if filepath:
-            fnames = os.listdir(filepath)
-            log_files = [fname for fname in fnames if '.log' in fname]
-        else:
-            log_files = []
-        log_fnames = [filepath + fname_pre + str(n) + '.log' for n in expt_nums]
-        for lf in log_fnames:
-            if re.split(r'\\|/', lf)[-1] not in log_files:
-                print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
-                return
-            log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
-                                   names=['Time', 'String', 'Value'])
-            lstarts.append(np.datetime64(log_data.iloc[0, 0]))
-            lends.append(np.datetime64(log_data.iloc[-1, 0]))
-            if Tstring:
-                T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
-                                                                  == 'temp2')])
-            beam_currents = log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
-                                                                == 'TS1')]
-            av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
-            av_bcs.append(av_bc)
-            if av_bc < self.beam_min:
-                beam_offs.append(expt_nums[i])
-        T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
-        print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), 
-                                                                  self.beam_min)
-        print len(lstarts)
-        print 'Start time = %s' % str(lstarts[0])
-        print 'End time = %s' % str(lends[-1])
-        scan_times = [ls - lstarts[0] for ls in lstarts]
-        scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
-        self.scan_times = scan_times
-        self.lstarts = lstarts
-        self.lends = lends
-        self.av_bcs = av_bcs
-        if Tstring:
-            self.T_vals = T_vals
+    def _get_shapes(self):
+        """Used for debugging purposes. Returns shapes of all datasets"""
+        return [dset.shape for dset in self.data]
 
 def get_expt_numbers(first_file_number, last_file_number):
     """Return list of experiment numbers"""
@@ -1028,17 +1036,6 @@ def get_expt_fnames_all(filepath, expt_numbers, fname_pre='pol',
         else:
             file_extension = '_b' + str(bank_num) + '_D.dat'
     return [filepath + fname_pre + str(n) + file_extension for n in expt_numbers]
-
-def get_log_fnames(filepath, expt_numbers, fname_pre='POL', log_extension='.log'):
-    """Return all log file names
-    
-    Args:
-        filepath (str): file path
-        expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'POL'
-        log_extension: defaults to '.log'
-    """
-    return [filepath + fname_pre + str(n) + log_extension for n in expt_numbers]
 
 def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None,
                     bank_num=5, tof=True, missing_nums=False, print_missing=True):
@@ -1073,109 +1070,6 @@ def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None
         return result, missing
     else:
         return result
-
-def get_scan_times(first_file_number, last_file_number, filepath, Tstring=None,
-                   fname_pre='POL', log_extension='.log', beam_min=100,
-                   full_output=True, print_info=True):
-    """Return array of scan times relative to start of first file number scan
-    
-    Args:
-        first_file_number (int): first file number
-        last_file_number (int): last file number
-        filepath (str): file path
-        Tstring (str): Can be 'temp1', 'temp2' or 'temp3' if T values wanted
-        fname_pre (str): defaults to 'POL'
-        log_extension: defaults to '.log'
-        beam_min (float or int): minimum amount of beam required in uA
-        full_output (bool): determines whether to return full output, including
-        lstarts, lends, beam_offs and average beam currents.
-        print_info (bool): determines whether to print information
-    Returns:
-        scan_times: array of relative scan times (in hours)
-        lstarts: list of log file start times
-        lends: list of log file end times
-        beam_offs: list of beam off experiment numbers 
-        T_vals: array of temperature values (if Tstring argument used)
-    """
-    lstarts, lends, T_vals, beam_offs, av_bcs = [], [], [], [], []
-    expt_numbers = get_expt_numbers(first_file_number, last_file_number)
-    log_fnames = get_log_fnames(filepath, expt_numbers, fname_pre, log_extension)
-    for i, f in enumerate(log_fnames):
-        log_data = pd.read_csv(f, header=None, delim_whitespace=True,
-                               names=['Time', 'String', 'Value'])
-        lstarts.append(np.datetime64(log_data.iloc[0, 0]))
-        lends.append(np.datetime64(log_data.iloc[-1, 0]))
-        if Tstring:
-            T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values == 'temp2')])
-        beam_currents = log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values == 'TS1')]
-        av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
-        av_bcs.append(av_bc)
-        if av_bc < beam_min:
-            beam_offs.append(expt_numbers[i])
-    T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
-    if print_info:
-        print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), beam_min)
-        print 'Start time = %s' % str(lstarts[0])
-        print 'End time = %s' % str(lends[-1])
-    scan_times = [ls - lstarts[0] for ls in lstarts]
-    scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
-    if full_output:
-        if Tstring:
-            return scan_times, lstarts, lends, beam_offs, av_bcs, T_vals
-        else:
-            return scan_times, lstarts, lends, beam_offs, av_bcs
-    else:
-        if Tstring:
-            return scan_times, T_vals
-        else:
-            return scan_times
-
-
-def get_data(first_file_number, last_file_number, filepath, fname_pre='pol', 
-             file_extension=None, bank_num=5, tof=True, print_missing=True,
-             beam_offs=None):
-    """Return diffraction data
-    
-    Args:
-        first_file_number (int): first file number
-        last_file_number (int): last file number
-        filepath (str): file path
-        expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'pol' for Polaris reduced data
-        file_extension: if set to string, then overrides default bank_num and
-        tof args.
-        bank_num (int or str): which bank number's data to load
-        tof (bool): whether to load the data in TOF or d
-        print_missing (bool): whether to print missing files
-        beam_offs (list): list of expt numbers where beam was off
-    """
-    data = []
-    first_missing = False
-    expt_numbers = get_expt_numbers(first_file_number, last_file_number)
-    expt_fnames = get_expt_fnames(filepath, expt_numbers, fname_pre,
-                                  file_extension, bank_num, tof, False,
-                                  print_missing)
-    if beam_offs:
-        bo_indices = [expt_numbers.index(bo) for bo in beam_offs]
-        expt_fnames = ['' if i in bo_indices else fname for i, fname in 
-                       enumerate(expt_fnames)]
-    for i, f in enumerate(expt_fnames):
-        if f:
-            marker = i
-            data.append(pd.read_csv(f, header=None, delim_whitespace=True, 
-                        names=['x', 'y', 'e']))
-        else:
-            if len(data):
-                data.append(pd.DataFrame({'x' : data[0]['x'].values, 
-                                          'y' : np.zeros(data[0].shape[0]),
-                                          'e' : np.zeros(data[0].shape[0])}))
-            else:
-                first_missing = True
-    if first_missing:
-        data.insert(0, pd.DataFrame({'x' : data[marker - 1]['x'].values, 
-                                     'y' : np.zeros(data[marker - 1].shape[0]),
-                                     'e' : np.zeros(data[marker - 1].shape[0])}))
-    return Dataset(data)
 
 def get_igan_data(filepath_igan, igan_number, first_file_number, 
                   last_file_number, filepath=None, fname_pre='POL',
