@@ -252,7 +252,52 @@ class Dataset:
                                     np.zeros(data[marker - 1].shape[0])}))
         self.data = data
 
-    #data_xy() only works if all files are the same length
+    def get_igan_data(self, igan_number, filepath_igan=None):
+        """Return IGAn data for given sample number"""
+        if len(self.lstarts) == 0:
+            print 'You need to run Dataset.get_scan_times() before \
+                    Dataset.get_igan_data()'
+            return
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 
+                  'Sep', 'Oct', 'Nov', 'Dec']
+        igan_number = ''.join(['0'] * (4 - len(str(igan_number)))) + \
+                str(igan_number)
+        if not filepath_igan:
+            filepath_igan = self.filepath
+        igan_fpath = filepath_igan + 'Sample_' + igan_number + '/'
+        igan_dtimes = []
+        igan_types = []
+        igan_datasets = []
+        with open(igan_fpath + 'Sample Log.txt', 'r') as f:
+            for l in f:
+                lsplit = l.split()
+                if 'begins' in lsplit:
+                    m = str(months.index(lsplit[3][:3]) + 1)
+                    igan_dtimes.append('T'.join(['-'.join([lsplit[4], m, 
+                                                           lsplit[2]]), 
+                                                 lsplit[0]]))
+                    igan_types.append(lsplit[7:9])
+        igan_times =  [(np.datetime64(idt) - self.lstarts[0]) / 
+                       (np.timedelta64(1, 's') * 3600) for idt in 
+                       igan_dtimes]
+        for i, igan_run in enumerate(igan_types):
+            it_fname = igan_fpath + igan_run[0] + '/' + igan_run[0] + \
+                    igan_run[1] + '/' + 'Data.txt'
+            with open(it_fname, 'r') as f:
+                for i1, l in enumerate(f):
+                    if l.lstrip().rstrip() == '':
+                        it_header = i1
+                        break
+            igan_dataset = pd.read_csv(it_fname, header=it_header, 
+                                       delim_whitespace=True, 
+                                       usecols=[0, 1, 2, 3]).values[:-1, :]
+            igan_dataset[:, 0] = igan_dataset[:, 0].astype(np.float) / 60 +\
+                    igan_times[i]
+            igan_datasets.append(igan_dataset)
+        igan_data = np.row_stack(igan_datasets)
+        self.igan_data = igan_data
+
+   #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
     def data_xy(self, indices=None):
         """Return two arrays of x data and y data
@@ -297,7 +342,8 @@ class Dataset:
         if file_nums:
             if type(file_nums) == type(''):
                 file_nums = [file_nums]
-            fnames = [filepath + pre_fname + str(f) + post_fname for f in file_nums]
+            fnames = [filepath + pre_fname + str(f) + post_fname for f in
+                      file_nums]
         else:
             fnames = [filepath + pre_fname + str(f) + post_fname for f in 
                       range(len(self.data))]
@@ -305,10 +351,12 @@ class Dataset:
             if type(t) == type(None):
                 t = np.array(range(len(self.data)))
             ti = np.abs(t - tval).argmin()
-            self.data[ti].to_csv(fnames[0], index=False, header=False, sep=sep)
+            self.data[ti].to_csv(fnames[0], index=False, header=False, 
+                                 sep=sep)
             return
         for i in range(len(self.data)):
-            self.data[i].to_csv(fnames[i], index=False, header=False, sep=sep)
+            self.data[i].to_csv(fnames[i], index=False, header=False, 
+                                sep=sep)
         return        
     
     def sum_dsets(self, sum_num, t=None, T=None):
@@ -384,8 +432,9 @@ class Dataset:
         else:
             return Dataset(result)
     
-    def plot(self, tval, t=None, xlabel=u'd / \u00C5', ylabel='Intensity / Counts',
-             figsize=(10, 7), x_range=None, y_range=None, linecolour='g'):
+    def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
+             ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
+             y_range=None, linecolour='g'):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -413,8 +462,9 @@ class Dataset:
             ax.set_ylim(y_range[0], y_range[1])
         plt.tight_layout() 
     
-    def plotQ(self, tval, t=None, xlabel=u'Q / \u00C5$^{-1}$', ylabel='Intensity / Counts',
-              figsize=(10, 7), x_range=None, y_range=None, linecolour='g'):
+    def plotQ(self, tval, t=None, xlabel=u'Q / \u00C5$^{-1}$', 
+              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
+              y_range=None, linecolour='g'):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -442,9 +492,10 @@ class Dataset:
             ax.set_ylim(y_range[0], y_range[1])
         plt.tight_layout()       
         
-    def contour_plot(self, t=None, xlabel='Run number', ylabel=u'd / \u00C5', 
-                     zlabel='Intensity / Counts', colour_num=20, figsize=(10, 7),
-                     x_range=None, y_range=None, z_range=None, xyflip=False, zscale=None,
+    def contour_plot(self, t=None, xlabel='Run number', ylabel=u'd / \u00C5',
+                     zlabel='Intensity / Counts', colour_num=20, 
+                     figsize=(10, 7), x_range=None, y_range=None, 
+                     z_range=None, xyflip=False, zscale=None,
                      log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel='$\sqrt{Intensity / Counts}$'):
         """Return a contour plot of the data
@@ -466,9 +517,8 @@ class Dataset:
         #26/01/16 rewrite
         #data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(len(self.data)), 
-                            np.arange(self.data[0].shape[0]))[0]
-        elif t.ndim == 1:
+            t = self.scan_times
+        if t.ndim == 1:
             t = np.meshgrid(t, np.arange(self.data[0].shape[0]))[0]
         if x_range:
             ix0, ix1 = [np.abs(t[0, :] - val).argmin() for val in x_range]
@@ -476,7 +526,8 @@ class Dataset:
         else:
             ix0, ix1 = 0, len(self.data) - 1
         if y_range:
-            iy0, iy1 = [np.abs(self.data[0].values[:, 0] - val).argmin() for val in y_range]
+            iy0, iy1 = [np.abs(self.data[0].values[:, 0] - val).argmin() for
+                        val in y_range]
             t = t[iy0:iy1 + 1, :]
         else:
             iy0, iy1 = 0, self.data[0].shape[0] - 1
@@ -507,11 +558,13 @@ class Dataset:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         plt.tight_layout()
         
-    def contour_temp(self, T, t=None, xlabel='Run number', ylabel=u'd / \u00C5', 
-                     ylabel2=u'Temperature / \u00B0C', zlabel='Intensity / Counts',
-                     colour_num=20, figsize=(10, 7), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, Tcolour='g', height_ratios=[1, 2],
-                     width_ratios=[25, 1], zscale=None, log_zlabel='log(Intensity / Counts)',
+    def contour_temp(self, T, t=None, xlabel='Run number', 
+                     ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
+                     zlabel='Intensity / Counts', colour_num=20, 
+                     figsize=(10, 7), x_range=None, y_range=None, 
+                     z_range=None, xyflip=False, Tcolour='g', 
+                     height_ratios=[1, 2], width_ratios=[25, 1], zscale=None,
+                     log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel = '$\sqrt{Intensity / Counts}$'):
         """Return a contour plot of the data
         
@@ -530,7 +583,7 @@ class Dataset:
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt'
         """
-        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
+        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
             t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
         elif t.ndim == 1:
@@ -577,20 +630,19 @@ class Dataset:
         ax2.set_xlim(t[0, 0], t[0, -1])
         plt.tight_layout(rect=(0, 0, 0.85, 1))
     
-    def contour_igan(self, igan, t, xlabel='Time / h', ylabel=u'd / \u00C5', 
+    def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
                      ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg', 
                      ylabel4='Pressure / mbar', zlabel='Intensity / Counts',
-                     colour_num=20, figsize=(10, 10), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, Tcolour='g', masscolour='r', 
-                     pressurecolour='b', height_ratios=[1, 1, 1, 2],
-                     width_ratios=[25, 1], zscale=None, log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', T_range=None,
-                     m_range=None, p_range=None):
+                     colour_num=20, figsize=(10, 10), x_range=None, 
+                     y_range=None, z_range=None, xyflip=False, Tcolour='g', 
+                     masscolour='r', pressurecolour='b', 
+                     height_ratios=[1, 1, 1, 2], width_ratios=[25, 1], 
+                     zscale=None, log_zlabel='log(Intensity / Counts)',
+                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
+                     T_range=None, m_range=None, p_range=None):
         """Return a contour plot of the data
         
         Args:
-            T: temperature array
-            t: array of time/run number values, can be 1D or 2D
             xlabel: label for x axis
             ylabel: label for y axis
             ylabel: label for temperature plot
@@ -606,8 +658,11 @@ class Dataset:
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt'
         """
-        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
-        igan_t, igan_T, igan_m, igan_p = igan[:, 0], igan[:, 3], igan[:, 1], igan[:, 2]
+        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th) 
+        igan = self.igan_data
+        t = self.scan_times
+        igan_t, igan_T, igan_m, igan_p = [igan[:, 0], igan[:, 3], igan[:, 1],
+                                          igan[:, 2]]
         if t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         if x_range:
@@ -635,7 +690,8 @@ class Dataset:
         cont = ax_cont.contourf(t, data_y, data_z, colour_num)
         ax_cont.set_xlabel(xlabel)
         ax_cont.set_ylabel(ylabel)
-        ax_cont.tick_params(which='both', top=False, right=False, direction='out')
+        ax_cont.tick_params(which='both', top=False, right=False, 
+                            direction='out')
         ax_cont.set_xlim(t[0, 0], t[0, -1])
         axins = inset_axes(ax_cont, width='5%', height='100%', loc=6,
                            bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
@@ -649,31 +705,36 @@ class Dataset:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         ax_T.plot(igan_t, igan_T, color=Tcolour)
         ax_T.set_ylabel(ylabel2)
-        ax_T.tick_params(which='both', top=False, right=False, direction='out')
+        ax_T.tick_params(which='both', top=False, right=False, 
+                         direction='out')
         if T_range:
             ax_T.set_ylim(T_range)
         plt.setp(ax_T.get_xticklabels(), visible=False)
         ax_m.plot(igan_t, igan_m, color=masscolour)
         ax_m.set_ylabel(ylabel3)
-        ax_m.tick_params(which='both', top=False, right=False, direction='out')
+        ax_m.tick_params(which='both', top=False, right=False, 
+                         direction='out')
         if m_range:
             ax_m.set_ylim(m_range)
         plt.setp(ax_m.get_xticklabels(), visible=False)
         ax_p.plot(igan_t, igan_p, color=pressurecolour)
         ax_p.set_ylabel(ylabel4)
-        ax_p.tick_params(which='both', top=False, right=False, direction='out')
+        ax_p.tick_params(which='both', top=False, right=False, 
+                         direction='out')
         if p_range:
             ax_p.set_ylim(p_range)
         plt.setp(ax_p.get_xticklabels(), visible=False)
         plt.tight_layout(rect=(0, 0, 0.85, 1))
         
-    def contour_mult(self, T=None, t=None, xlabel='Run number', ylabel=u'd / \u00C5', 
-                     ylabel2=u'Temperature / \u00B0C', zlabel='Intensity / Counts',
-                     colour_num=20, figsize=(10, 7), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, Tcolour='g', height_ratios=None,
-                     width_ratios=None, zscale=None, log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', grid=None, sharey=True,
-                     shareT=True, colourbar=False):
+    def contour_mult(self, T=None, t=None, xlabel='Run number', 
+                     ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
+                     zlabel='Intensity / Counts', colour_num=20, 
+                     figsize=(10, 7), x_range=None, y_range=None, 
+                     z_range=None, xyflip=False, Tcolour='g', 
+                     height_ratios=None, width_ratios=None, zscale=None, 
+                     log_zlabel='log(Intensity / Counts)',
+                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', grid=None, 
+                     sharey=True, shareT=True, colourbar=False):
         """Return a contour plot of the data
         
         Args:
@@ -698,7 +759,7 @@ class Dataset:
             separate ticks for each one.
             colourbar (bool): determines presence of colour bar(s).
         """
-        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
+        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         #work out grid space needed
         if grid:
             gs_row = [g[0] for g in grid].max()
@@ -939,14 +1000,17 @@ class Dataset:
             self.anim.save(save_fname, fps=10)
         plt.show()
     
-    def contour_animate(self, T=None, t=None, xlabel='Run number', ylabel=u'd / \u00C5',
-                        ylabel2=u'Temperature / \u00B0C', zlabel='Intensity / Counts',
-                        colour_num=20, figsize=(10, 10), x_range=None, y_range=None,
-                        z_range=None, xyflip=False, Tcolour='g', height_ratios=None,
-                        zscale=None, log_zlabel='log(Intensity / Counts)',
-                        sqrt_zlabel = '$\sqrt{Intensity\ /\ Counts}$', linecolour='g',
-                        vline_colour='w', Tpt_colour='r', Tpt_size=10, interval=200,
-                        save_fname=None):
+    def contour_animate(self, T=None, t=None, xlabel='Run number', 
+                        ylabel=u'd / \u00C5', 
+                        ylabel2=u'Temperature / \u00B0C', 
+                        zlabel='Intensity / Counts',
+                        colour_num=20, figsize=(10, 10), x_range=None, 
+                        y_range=None, z_range=None, xyflip=False, 
+                        Tcolour='g', height_ratios=None, zscale=None, 
+                        log_zlabel='log(Intensity / Counts)',
+                        sqrt_zlabel = '$\sqrt{Intensity\ /\ Counts}$', 
+                        linecolour='g', vline_colour='w', Tpt_colour='r', 
+                        Tpt_size=10, interval=200, save_fname=None):
         """Return a contour plot of the data
         
         Args:
@@ -1130,51 +1194,6 @@ def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None
     else:
         return result
 
-def get_igan_data(filepath_igan, igan_number, first_file_number, 
-                  last_file_number, filepath=None, fname_pre='POL',
-                  log_extension='.log'):
-    """Return IGAn data for given sample number
-    
-    Args:
-        filepath_igan (str): file path for directory with IGAn directory within
-        igan_number (int): sample number for IGAn
-        first_file_number (int): first file number
-        last_file_number (int): last file number
-        filepath (str): file path for log files
-        expt_numbers (list): list of experiment numbers
-        fname_pre (str): defaults to 'POL'
-        log_extension: defaults to '.log'
-    Returns:
-        igan_data (array): columns of time, mass, pressure and temperature
-    """
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 
-              'Oct', 'Nov', 'Dec']
-    igan_number = ''.join(['0'] * len(str(igan_number))) + str(igan_number)
-    igan_fpath = filepath_igan + 'Sample_' + igan_number + '/'
-    igan_dtimes = []
-    igan_types = []
-    if not filepath:
-        filepath = filepath_igan
-    log_starts = get_scan_times(first_file_number, last_file_number, filepath,
-                                None, fname_pre, log_extension, full_output=True,
-                                print_info=False)[1]
-    with open(igan_fpath + 'Sample Log.txt', 'r') as f:
-        for l in f:
-            lsplit = l.split()
-            if 'begins' in lsplit:
-                m = str(months.index(lsplit[3][:3]) + 1)
-                igan_dtimes.append('T'.join(['-'.join([lsplit[4], m, lsplit[2]]), lsplit[0]]))
-                igan_types.append(lsplit[7:9])
-    igan_times =  [(np.datetime64(idt) - log_starts[0]) / (np.timedelta64(1, 's') * 3600) for idt in igan_dtimes]
-    igan_datasets = []
-    for i, igan_run in enumerate(igan_types):
-        it_fname = igan_fpath + igan_run[0] + '/' + igan_run[0] + igan_run[1] + '/' + 'Data.txt'
-        igan_dataset = pd.read_csv(it_fname, header=19, delim_whitespace=True, usecols=[0, 1, 2, 3]).iloc[:-1, :].values
-        igan_dataset[:, 0] = igan_dataset[:, 0].astype(np.float) / 60 + igan_times[i]
-        igan_datasets.append(igan_dataset)
-    igan_data = np.row_stack(igan_datasets)
-    return igan_data
-    
 def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
            last_file_number=None, filepath=None, fname_pre='pol', file_extensions=None,
            bank_nums=5, xlabel=u'Q / \u00C5$^{-1}$', 
