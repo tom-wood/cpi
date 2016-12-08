@@ -76,8 +76,8 @@ class PlotDefaults():
             self._setp(param, value)
 
 class Dataset:
-    def __init__(self, filepath, first_file_number, last_file_number, beamline, beam_min=100., 
-                 bank_num=4, tof=False):
+    def __init__(self, filepath, first_file_number, last_file_number,
+                 beamline, beam_min=100., bank_num=4, tof=False):
         self.filepath = filepath
         self.expt_nums = range(first_file_number, last_file_number + 1)
         if beamline == 'POLARIS':
@@ -89,10 +89,19 @@ class Dataset:
         self.beam_min = beam_min
         self.bank_num = bank_num
         self.tof = tof
+        self.scan_times = []
+        self.lstarts = []
+        self.lends = []
+        self.av_bcs = []
+        self.beam_offs = []
+        self.beam_offs2 = []
+        self.beam_offs3 = []
+        self.Tvals = []
 
-    def get_scan_times(self, Tstring=None, beam_off_time=120):
+    def get_scan_times(self, Tstring=None, beam_off_time=120): 
         """Assign log starts, ends, T and beam current attributes"""
-        lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2 = [], [], [], [], [], []
+        lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2, beam_offs3 \
+                = [], [], [], [], [], [], []
         if self.beamline == 'Polaris':
             fname_pre = 'POL'
             lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
@@ -106,46 +115,74 @@ class Dataset:
             log_files = [fname for fname in fnames if '.log' in fname]
         else:
             log_files = []
-        log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in self.expt_nums]
+        log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
+                      self.expt_nums]
         ebo_t = None #this is for working out extra beam offs
-        for lf in log_fnames:
+        for i1, lf in enumerate(log_fnames):
             if re.split(r'\\|/', lf)[-1] not in log_files:
-                print "%s doesn't exist. Try looking in %s for files." % (lf, lflocation)
+                print "%s doesn't exist. Try looking in %s for files." \
+                        % (lf, lflocation)
                 return
             log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
             lends.append(np.datetime64(log_data.iloc[-1, 0]))
             if Tstring:
-                T_vals.append(log_data.iloc[:, 2].values[np.where(log_data.iloc[:, 1].values \
-                                                                  == 'temp2')])
+                T_vals.append(log_data.iloc[:, 2].values\
+                              [np.where(log_data.iloc[:, 1].values\
+                                        == 'temp2')])
             bcs = np.where(log_data.iloc[:, 1].values == 'TS1')
             beam_currents = log_data.iloc[:, 2].values[bcs]
             bc_times = log_data.iloc[:, 0].values[bcs]
-            for i, bc in enumerate(beam_currents):
-                if float(bc) < self.beam_min:
-                    if ebo_t:
-                        continue
-                    else:
-                        ebo_t = bc_times[i]
-                else:
-                    if ebo_t:
-                        beam_offs2.append((self.expt_nums[i], np.datetime64(bc_times[i])))
-                        ebo_t = None
-                    else:
-                        continue
-            ebts = bc_times[np.where(np.array(beam_currents, dtype='float') < self.beam_min)]
+            start_marker = 0 #determines whether beam offs at start of log
+                             #file or end (ones in the middle are ignored)
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
             av_bcs.append(av_bc)
             if av_bc < self.beam_min:
-                beam_offs.append(self.expt_nums[i])
-        T_vals = np.array([np.mean([float(val) for val in run]) for run in T_vals])
-        print '%d runs have some beam off (less than %.1f uA)' % (len(beam_offs), 
-                                                                  self.beam_min)
+                beam_offs.append(self.expt_nums[i1])
+                if (lends[i1] - lstarts[i1]) / np.timedelta64(1, 's') >\
+                   beam_off_time:
+                    beam_offs2.append((i1 + 1, lends[i1]))
+            #now work out if a long time between lstart and previous lend
+            if i1:
+                if (lstarts[i1] - lends[i1 - 1]) / np.timedelta64(1, 's') >\
+                   beam_off_time:
+                    beam_offs2.append((i1, lends[i1 - 1]))
+                    beam_offs2.append((i1, lstarts[i1] - \
+                                      np.timedelta64(beam_off_time, 's')))
+            #the below is code for partial beam_on log files
+            #for i2, bc in enumerate(beam_currents):
+            #    if float(bc) < self.beam_min:
+            #        if i2 == 0:
+            #            start_marker = 1
+            #        if ebo_t:
+            #            continue
+            #        else:
+            #            ebo_t = bc_times[i2]
+            #            if i2 != 0: #i.e. beam offs won't be inserted here
+            #                start_marker = 0
+            #    else:
+            #        if ebo_t:
+            #            time_diff = (np.datetime64(bc_times[i2]) - \
+            #                    np.datetime64(ebo_t)) / \
+            #                    np.timedelta64(1, 's')
+            #            if start_marker and time_diff > beam_off_time:
+            #                beam_offs3.append((i1, [np.datetime64(ebo_t), 
+            #                                np.datetime64(bc_times[i2])]))
+            #            ebo_t = None
+            #        else:
+            #            continue
+        T_vals = np.array([np.mean([float(val) for val in run]) for run in
+                           T_vals])
+        print '%d runs have some beam off (less than %.1f uA)' % \
+                (len(beam_offs), self.beam_min)
         print 'Start time = %s' % str(lstarts[0])
         print 'End time = %s' % str(lends[-1])
         scan_times = [ls - lstarts[0] for ls in lstarts]
-        scan_times = np.array([st / np.timedelta64(1, 's') for st in scan_times]) / 3600
+        for i, bo in enumerate(beam_offs2):
+            scan_times.insert(i + bo[0], bo[1] - lstarts[0])
+        scan_times = np.array([st / np.timedelta64(1, 's') for st in
+                               scan_times]) / 3600
         self.scan_times = scan_times
         self.lstarts = lstarts
         self.lends = lends
@@ -187,26 +224,32 @@ class Dataset:
         data = []
         first_missing = False
         expt_fnames = self.get_expt_fnames(print_missing=print_missing)
-        if self.beam_offs:
-            bo_indices = [self.expt_nums.index(bo) for bo in self.beam_offs]
-            expt_fnames = ['' if i in bo_indices else fname for i, fname in
-                           enumerate(expt_fnames)]
+        bo_indices = [self.expt_nums.index(bo) for bo in self.beam_offs]
+        expt_fnames = ['' if i in bo_indices else fname for i, fname in
+                       enumerate(expt_fnames)]
+        for i, bo in enumerate(self.beam_offs2):
+            expt_fnames.insert(i + bo[0],  '')
         for i, f in enumerate(expt_fnames):
             if f:
                 marker = i
-                data.append(pd.read_csv(f, header=None, delim_whitespace=True,
+                data.append(pd.read_csv(f, header=None, 
+                                        delim_whitespace=True,
                                         names=['x', 'y', 'e']))
             else:
                 if len(data):
                     data.append(pd.DataFrame({'x' : data[0]['x'].values, 
-                                              'y' : np.zeros(data[0].shape[0]),
-                                              'e' : np.zeros(data[0].shape[0])}))
+                                              'y' : \
+                                              np.zeros(data[0].shape[0]),
+                                              'e' : \
+                                              np.zeros(data[0].shape[0])}))
                 else:
                     first_missing=True
         if first_missing:
             data.insert(0, pd.DataFrame({'x' : data[marker - 1]['x'].values, 
-                                         'y' : np.zeros(data[marker - 1].shape[0]),
-                                         'e' : np.zeros(data[marker - 1].shape[0])}))
+                                         'y' : \
+                                         np.zeros(data[marker - 1].shape[0]),
+                                         'e' : \
+                                    np.zeros(data[marker - 1].shape[0])}))
         self.data = data
 
     #data_xy() only works if all files are the same length
