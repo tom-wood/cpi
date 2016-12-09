@@ -359,10 +359,10 @@ class Dataset:
                                 sep=sep)
         return        
     
-    def sum_dsets(self, sum_num, t=None, T=None):
+    def sum_dsets(self, sum_num, file_range=None, t=None, T=None):
         """Return mean summed datasets for sum_num interval
         Args:
-            sum_num (int): number of datasets to sum/average
+            sum_num (int): file range within which to sum data
             t (arr): time array
             T (arr): temperature array
         Returns:
@@ -370,19 +370,25 @@ class Dataset:
             t_result: average time array if t != None
             T_result: average temperature array if T != None
         """
+        if file_range:
+            indices = [self.expt_nums.index(fn) for fn in file_range]
+            bo_indices = np.array([b[0] for b in self.beam_offs2])
+            idxs = [i + np.searchsorted(bo_indices, i) for i in indices]
+        else:
+            indices = [0, len(self.expt_nums) - 1]
+            idxs = [0, len(self.data) - 1]
         result = []
-        for i, dset in enumerate(self.data):
+        for i, dset in enumerate(self.data[idxs[0]:idxs[1] + 1]):
             if i % sum_num == 0:
                 if i:
-                    if i == len(self.data) - 1:
+                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
                         new_y = np.column_stack((new_y, dset['y'].values))
                         new_e = np.column_stack((new_e, dset['e'].values**2))
                         new_e = np.sum(new_e, axis=1)**0.5 / (sum_num + 1)
                     else:
                         new_e = np.sum(new_e, axis=1)**0.5 / sum_num
-                    new_dset = pd.DataFrame(np.column_stack((dset['x'].values,
-                                                             np.mean(new_y, axis=1),
-                                                             new_e)))
+                    new_dset = pd.DataFrame(np.column_stack(\
+                        (dset['x'].values, np.mean(new_y, axis=1), new_e)))
                     new_dset.columns = ['x', 'y', 'e']
                     result.append(new_dset)
                 new_y = dset['y'].values
@@ -390,47 +396,53 @@ class Dataset:
             else:
                 new_y = np.column_stack((new_y, dset['y'].values))
                 new_e = np.column_stack((new_e, dset['e'].values**2))
-            if i == len(self.data) - 1 and i % sum_num != 0:
+            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
+               i % sum_num != 0:
                 new_e = np.sum(new_e, axis=1)**0.5 / (i % sum_num + 1)
-                new_dset = pd.DataFrame(np.column_stack((dset['x'].values,
-                                                         np.mean(new_y, axis=1),
-                                                         new_e)))
+                new_dset = pd.DataFrame(np.column_stack(\
+                        (dset['x'].values, np.mean(new_y, axis=1), new_e)))
                 new_dset.columns = ['x', 'y', 'e']
                 result.append(new_dset)                
-        if type(t) != type(None):
-            t_result = []
-            for i in range(len(self.data)):
-                if i % sum_num == 0:
-                    if i:
-                        if i == len(self.data) - 1:
-                            t_sum = np.concatenate((t_sum, np.array([t[i]])))
-                        t_result.append(np.mean(t_sum))
-                    t_sum = np.array([t[i]])
-                else:
-                    t_sum = np.concatenate((t_sum, np.array([t[i]])))
-                if i == len(self.data) - 1 and i % sum_num != 0:
+        if t is None:
+            t = self.scan_times[idxs[0]:idxs[1] + 1]
+        else:
+            t = t[idxs[0]:idxs[1] + 1]
+        t_result = []
+        for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
+            if i % sum_num == 0:
+                if i:
+                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
+                        t_sum = np.concatenate((t_sum, np.array([t[i]])))
                     t_result.append(np.mean(t_sum))
-        if type(T) != type(None):
+                t_sum = np.array([t[i]])
+            else:
+                t_sum = np.concatenate((t_sum, np.array([t[i]])))
+            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
+               i % sum_num != 0:
+                t_result.append(np.mean(t_sum))
+        if T is not None:
             T_result = []
-            for i in range(len(self.data)):
+            for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
                 if i % sum_num == 0:
                     if i:
                         T_result.append(np.mean(T_sum))
-                        if i == len(self.data) - 1:
+                        if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
                             T_sum = np.concatenate((T_sum, np.array([T[i]])))
                     T_sum = np.array([T[i]])
                 else:
                     T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                if i == len(self.data) - 1 and i % sum_num != 0:
+                if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and\
+                  i % sum_num != 0:
                     T_result.append(np.mean(T_sum))
-        if type(t) != type(None) and type(T) != type(None):
-            return Dataset(result), np.array(t_result), np.array(T_result)
-        elif type(t) != type(None) and type(T) == type(None):
-            return Dataset(result), np.array(t_result)
-        elif type(t) == type(None) and type(T) != type(None):
-            return Dataset(result), np.array(T_result)
+        res = Dataset(self.filepath, self.expt_nums[indices[0]], 
+                      self.expt_nums[indices[1]], self.beamline, 
+                      self.beam_min, self.bank_num, self.tof)
+        res.data = result
+        res.scan_times = np.array(t_result)
+        if T is None:
+            return res
         else:
-            return Dataset(result)
+            return res, T_result
     
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
@@ -446,7 +458,7 @@ class Dataset:
             x_range (list): x range
             y_range (list): y range
             linecolour (str): colour of plotted line"""
-        if type(t) == type(None):
+        if t is None:
             t = np.array(range(len(self.data)))
         ti = np.abs(t - tval).argmin()
         data_x = self.data[ti]['x'].values
