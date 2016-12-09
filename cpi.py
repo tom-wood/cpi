@@ -324,7 +324,7 @@ class Dataset:
         else:
             return [self.data[0].values[0, 0], self.data[0].values[-1, 0]]
     
-    def to_xye(self, filepath='', pre_fname='', post_fname='.dat', sep='\t',
+    def to_xye(self, filepath='', pre_fname='', post_fname='.xye', sep='\t',
                 file_nums=None, tval=None, t=None):
         """Write xye files for all datasets in Dataset
         
