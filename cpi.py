@@ -1,4 +1,5 @@
-#Version 0.1.0-alpha serious modification of Dataset class
+#Version 0.1.1-beta
+#03/01/17: added get_run_numbers() method to Dataset class
 
 import numpy as np
 import matplotlib as mpl
