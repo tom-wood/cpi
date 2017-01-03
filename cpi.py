@@ -192,6 +192,13 @@ class Dataset:
         if Tstring:
             self.T_vals = T_vals
 
+    def get_run_numbers(self):
+        """Return array of run numbers (accounting for beam offs)"""
+        run_nums = self.expt_nums[:]
+        for i, bo in enumerate(self.beam_offs2):
+            run_nums.insert(i + bo[0],  run_nums[i + bo[0]] - 0.5)
+        return np.array(run_nums)
+
     def get_expt_fnames_all(self): 
         if self.tof:
             suffix = '_b' + str(self.bank_num) + '_TOF.dat'
