@@ -1,5 +1,5 @@
 #Version 0.1.1-beta
-#03/01/17: added get_run_numbers() method to Dataset class
+#03/02/17: added log_fname attribute and get_temps() method to Dataset
 
 import numpy as np
 import matplotlib as mpl
@@ -9,6 +9,13 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import re
+from sys import platform
+from IPython import get_ipython
+ipy = get_ipython()
+if platform == 'linux2':
+    ipy.magic("matplotlib qt5")
+else:
+    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
@@ -78,13 +85,14 @@ class PlotDefaults():
 
 class Dataset:
     def __init__(self, filepath, first_file_number, last_file_number,
-                 suffix='-mac-001_reb_0002.xye'):
+                 suffix='-mac-001_reb_0002.xye', log_fname=None):
         self.filepath = filepath
         self.suffix = suffix
         self.expt_nums = range(first_file_number, last_file_number + 1)
         self.beam_offs = []
         self.Tvals = []
-
+        self._assign_log_fname(log_fname)
+        
     def get_run_numbers(self):
         """Return array of run numbers"""
         return np.array(self.expt_nums)
@@ -140,7 +148,46 @@ class Dataset:
         self.data = data
         return
 
-   #data_xy() only works if all files are the same length
+    def _append_log_fname(self, log_fname):
+        if '\\' in log_fname:
+            app_lf = log_fname
+        elif '/' in log_fname:
+            app_lf = log_fname
+        else:
+            app_lf = self.filepath + log_fname
+        return app_lf
+
+    def _assign_log_fname(self, log_fname=None):
+        if log_fname:
+            if type(log_fname) == type(''):
+                log_fname = [log_fname]
+            self.log_fname = [self._append_log_fname(lf) for lf in 
+                              log_fname]
+        else:
+            self.log_fname = None
+
+    def get_temps(self, log_fname=None):
+        """Fetch temperature vs run number for Datset log file(s)"""
+        if log_fname:
+            _assign_log_fname(log_fname)
+        if not self.log_fname:
+            fnames = os.listdir(self.filepath)
+            self.log_fname = [self.filepath + fn for fn in fnames if 
+                              fn[-3:] == 'log']
+        log_data = []
+        for lf in self.log_fname:
+            log_data.append(pd.read_csv(lf, header=None, 
+                                        delim_whitespace=True, 
+                                        names=['rn', 'T'], usecols=[0, 1]))
+        log_data_rns = np.concatenate([ld.values[:, 0] for ld in 
+                                       log_data]).astype(int)
+        log_data_Ts = np.concatenate([ld.values[:, 1] for ld in log_data])
+        #sort out log_data order
+        log_sort_is = np.argsort(log_data_rns)
+        self.log_data_rns = log_data_rns[log_sort_is]
+        self.log_data_Ts = log_data_Ts[log_sort_is]
+
+    #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
     def data_xy(self, indices=None):
         """Return two arrays of x data and y data
@@ -346,7 +393,7 @@ class Dataset:
             ax.set_ylim(y_range[0], y_range[1])
         plt.tight_layout()       
         
-    def contour_plot(self, t=None, xlabel='Run number', ylabel=r'2$\theta',
+    def contour_plot(self, t=None, xlabel='Run number', ylabel=r'2$\theta$',
                      zlabel='Intensity / Counts', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, xyflip=False, zscale=None,
@@ -413,8 +460,8 @@ class Dataset:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         plt.tight_layout()
         
-    def contour_temp(self, T, t=None, xlabel='Run number', 
-                     ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
+    def contour_temp(self, T=None, t=None, xlabel='Run number', 
+                     ylabel=r'2$\theta$', ylabel2=u'Temperature / \u00B0C',
                      zlabel='Intensity / Counts', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, xyflip=False, Tcolour='g', 
@@ -440,16 +487,29 @@ class Dataset:
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
-        elif t.ndim == 1:
+            rns = self.get_run_numbers()
+            t = np.array([rn - rns[0] for rn in rns])
+        if type(T) == type(None):
+            T_t = np.array([rn - self.get_run_numbers()[0] for rn in 
+                            self.log_data_rns])
+            T = self.log_data_Ts
+        else:
+            if t.ndim == 1:
+                T_t = t
+            else:
+                T_t = t[0]
+        if t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         if x_range:
             i0, i1 = [np.abs(t[0, :] - val).argmin() for val in x_range]
             t = t[:, i0:i1 + 1]
             data_y = data_y[:, i0:i1 + 1]
             data_z = data_z[:, i0:i1 + 1]
+            i2, i3 = [np.searchsorted(T_t, val) for val in x_range]
+            T_t = T_t[i2:i3 + 1]
         if y_range:
-            i0, i1 = [np.abs(data_y[:, 0] - val).argmin() for val in y_range]
+            i0, i1 = [np.abs(data_y[:, 0] - val).argmin() for val in 
+                      y_range]
             t = t[i0:i1 + 1, :]
             data_y = data_y[i0:i1 + 1, :]
             data_z = data_z[i0:i1 + 1, :]
@@ -466,11 +526,13 @@ class Dataset:
         cont = ax2.contourf(t, data_y, data_z, colour_num)
         ax2.set_xlabel(xlabel)
         ax2.set_ylabel(ylabel)
-        ax2.tick_params(which='both', top=False, right=False, direction='out')
+        ax2.tick_params(which='both', top=False, right=False, 
+                        direction='out')
         ax2.set_xlim(t[0, 0], t[0, -1])
-        ax1.plot(t[0, :], T, color=Tcolour)
+        ax1.plot(T_t, T, color=Tcolour)
         ax1.set_ylabel(ylabel2)
-        ax1.tick_params(which='both', top=False, right=False, direction='out')
+        ax1.tick_params(which='both', top=False, right=False, 
+                        direction='out')
         plt.setp(ax1.get_xticklabels(), visible=False)
         axins = inset_axes(ax2, width='5%', height='100%', loc=6,
                            bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
