@@ -10,10 +10,12 @@ from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import re
 from sys import platform
+from IPython import get_ipython
+ipy = get_ipython()
 if platform == 'linux2':
-    %matplotlib qt5
+    ipy.magic("matplotlib qt5")
 else:
-    %matplotlib qt
+    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
