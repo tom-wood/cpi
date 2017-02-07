@@ -1,5 +1,5 @@
-#Version 0.1.1-beta
-#03/01/17: added get_run_numbers() method to Dataset class
+#Version 0.1.2-beta
+#07/02/17: added get_max_intensity() method
 
 import numpy as np
 import matplotlib as mpl
@@ -332,6 +332,21 @@ class Dataset:
             data_x[:, i] = dset['x'].values[iy0:iy1 + 1]
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
+        
+    def get_max_intensity(self, rn_range=None, tth_range=None):
+        """Return maximum intensity recorded within a certain range"""
+        if type(rn_range) != type(None):
+            indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
+                       in rn_range]
+        else:
+            indices = None
+        tth, intensity = self.data_xy(indices)
+        if type(tth_range) != type(None):
+            i0, i1 = [np.searchsorted(tth[:, 0], tthval) for tthval in
+                      tth_range]
+        else:
+            i0, i1 = 0, tth.shape[1] - 1
+        return intensity[i0:i1 + 1, :].max()
         
     def x_range(self):
         if len(self.data) == 0:

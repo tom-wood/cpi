@@ -1,5 +1,5 @@
-#Version 0.1.1-beta
-#03/02/17: added log_fname attribute and get_temps() method to Dataset
+#Version 0.1.2-beta
+#07/02/17: added get_max_intensity() method
 
 import numpy as np
 import matplotlib as mpl
@@ -222,7 +222,6 @@ class Dataset:
         else:
             i0, i1 = 0, tth.shape[1] - 1
         return intensity[i0:i1 + 1, :].max()
-
         
     def x_range(self):
         if len(self.data) == 0:
