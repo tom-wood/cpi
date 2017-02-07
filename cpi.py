@@ -1,5 +1,5 @@
-#Version 0.1.1-beta
-#03/01/17: added get_run_numbers() method to Dataset class
+#Version 0.1.2-beta
+#07/02/17: added yflip option to contour_plot() and contour_temp() methods
 
 import numpy as np
 import matplotlib as mpl
@@ -515,7 +515,7 @@ class Dataset:
     def contour_plot(self, t=None, xlabel='Run number', ylabel=u'd / \u00C5',
                      zlabel='Intensity / Counts', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, zscale=None,
+                     z_range=None, xyflip=False, yflip=False, zscale=None,
                      log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel='$\sqrt{Intensity / Counts}$'):
         """Return a contour plot of the data
@@ -530,9 +530,12 @@ class Dataset:
             x_range (list): x range
             y_range (list): y range
             z_range (list): z range
-            xyflip (bool): determines which value on x-axis (default False=time)
+            xyflip (bool): determines which value on x-axis (default 
+            False=time)
+            yflip (bool): determines whether to flip the y axis
             zscale: 'log' for log scaling and 'sqrt' for square root
-            
+            log_zlabel (str): Title of colourbar when zscale='log'
+            sqrt_zlabel (str): Title of colourbar when zscale='sqrt'
         """
         #26/01/16 rewrite
         #data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
@@ -568,6 +571,8 @@ class Dataset:
             plt.contourf(t, data_y, data_z, colour_num)
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
+        if yflip:
+            ax.invert_yaxis()
         plt.tick_params(which='both', top=False, right=False)
         cbar = plt.colorbar()
         if zscale == 'log':
@@ -582,8 +587,8 @@ class Dataset:
                      ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
                      zlabel='Intensity / Counts', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, Tcolour='g', 
-                     height_ratios=[1, 2], width_ratios=[25, 1], zscale=None,
+                     z_range=None, yflip=False, Tcolour='g', 
+                     height_ratios=[1, 2], zscale=None,
                      log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel = '$\sqrt{Intensity / Counts}$'):
         """Return a contour plot of the data
@@ -600,8 +605,13 @@ class Dataset:
             x_range (list): x range
             y_range (list): y range
             z_range (list): z range
+            yflip (bool): determines whether to flip the y axis
+            Tcolour (str): determines colour of temperature plot
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt'
+            zscale: 'log' for log scaling and 'sqrt' for square root
+            log_zlabel (str): Title of colourbar when zscale='log'
+            sqrt_zlabel (str): Title of colourbar when zscale='sqrt'
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
@@ -629,6 +639,8 @@ class Dataset:
         ax2 = fig.add_subplot(gs[1, 0])
         ax1 = fig.add_subplot(gs[0, 0], sharex=ax2)
         cont = ax2.contourf(t, data_y, data_z, colour_num)
+        if yflip:
+            ax2.invert_yaxis()
         ax2.set_xlabel(xlabel)
         ax2.set_ylabel(ylabel)
         ax2.tick_params(which='both', top=False, right=False, direction='out')
@@ -651,13 +663,13 @@ class Dataset:
         plt.tight_layout(rect=(0, 0, 0.85, 1))
     
     def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
-                     ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg', 
+                     ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg',
                      ylabel4='Pressure / mbar', zlabel='Intensity / Counts',
                      colour_num=20, figsize=(10, 10), x_range=None, 
                      y_range=None, z_range=None, xyflip=False, Tcolour='g', 
                      masscolour='r', pressurecolour='b', 
-                     height_ratios=[1, 1, 1, 2], width_ratios=[25, 1], 
-                     zscale=None, log_zlabel='log(Intensity / Counts)',
+                     height_ratios=[1, 1, 1, 2], zscale=None, 
+                     log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
                      T_range=None, m_range=None, p_range=None):
         """Return a contour plot of the data
