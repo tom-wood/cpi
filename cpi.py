@@ -781,14 +781,15 @@ class Dataset:
         plt.tight_layout(rect=(0, 0, 0.85, 1))
         
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
-                     ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
+                     ylabel=u'd / \u00C5', 
+                     ylabel2=u'Temperature / \u00B0C',
                      zlabel='Intensity / Counts', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, xyflip=False, Tcolour='g', 
                      height_ratios=None, width_ratios=None, zscale=None, 
                      log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', grid=None, 
-                     sharey=True, shareT=True, colourbar=False):
+                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
+                     grid=None, sharey=True, shareT=True, colourbar=False):
         """Return a contour plot of the data
         
         Args:
@@ -805,12 +806,12 @@ class Dataset:
             z_range (list or list of lists): z range(s)
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt' or list of those (or None)
-            grid: if None then defined by len(x_range) and len(y_range) otherwise
-            is a list of lists of x,y axes to be populated.
-            sharey (bool): assume that y-axes are shared intra rows, otherwise
-            separate ticks for each one.
-            shareT (bool): assume that Temp axes are shared intra rows, otherwise
-            separate ticks for each one.
+            grid: if None then defined by len(x_range) and len(y_range) 
+            otherwise is a list of lists of x,y axes to be populated.
+            sharey (bool): assume that y-axes are shared intra rows, 
+            otherwise separate ticks for each one.
+            shareT (bool): assume that Temp axes are shared intra rows, 
+            otherwise separate ticks for each one.
             colourbar (bool): determines presence of colour bar(s).
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
