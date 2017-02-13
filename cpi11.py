@@ -1,5 +1,5 @@
-#Version 0.1.2-beta
-#07/02/17: added yflip option to contour_plot() and contour_temp() methods
+#Version 0.1.3-beta
+#13/02/17: added twotheta_to_d method to Dataset class
 
 import numpy as np
 import matplotlib as mpl
@@ -85,13 +85,16 @@ class PlotDefaults():
 
 class Dataset:
     def __init__(self, filepath, first_file_number, last_file_number,
-                 suffix='-mac-001_reb_0002.xye', log_fname=None):
+                 suffix='-mac-001_reb_0002.xye', log_fname=None,
+                 wavelength=0.8527, zpe=0):
         self.filepath = filepath
         self.suffix = suffix
         self.expt_nums = range(first_file_number, last_file_number + 1)
         self.beam_offs = []
         self.Tvals = []
         self._assign_log_fname(log_fname)
+        self.wavelength = wavelength
+        self.zpe = zpe
         
     def get_run_numbers(self):
         """Return array of run numbers"""
@@ -340,13 +343,42 @@ class Dataset:
                   i % sum_num != 0:
                     T_result.append(np.mean(T_sum))
         res = Dataset(self.filepath, self.expt_nums[indices[0]], 
-                      self.expt_nums[indices[1]])
+                      self.expt_nums[indices[1]], suffix=self.suffix,
+                      log_fname=self.log_fname, wavelength=self.wavelength,
+                      zpe=self.zpe)
         res.data = result
         res.expt_nums = t_result
         if T is None:
             return res
         else:
             return res, T_result
+
+    def twotheta_to_d(self, wavelength=None, zpe=None, file_range=None):
+        """Return Dataset instance with d spacings rather than two theta"""
+        if file_range:
+            indices = [self.expt_nums.index(fn) for fn in file_range]
+            idxs = indices[:]
+        else:
+            indices = [0, len(self.expt_nums) - 1]
+            idxs = [0, len(self.data) - 1]
+        if wavelength:
+            self.wavelength = wavelength
+        if zpe:
+            self.zpe = zpe
+        result = []
+        for i, dset in enumerate(self.data[idxs[0]:idxs[1] + 1]):
+            new_x = wavelength / (2 * np.sin((dset['x'].values - self.zpe) \
+                                             / 2))
+            new_dset = pd.DataFrame(np.column_stack((new_x, 
+                                    dset['y'].values, dset['e'].values)))
+            new_dset.columns=['x', 'y', 'e']
+            result.append(new_dset)
+        res = Dataset(self.filepath, self.expt_nums[indices[0]],
+                      self.expt_nums[indices[1]], suffix=self.suffix,
+                      log_fname=self.log_fname, wavelength=self.wavelength,
+                      zpe=self.zpe)
+        res.data = result
+        return result
     
     def plot(self, tval, t=None, xlabel=r'2$\theta$', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
