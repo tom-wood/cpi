@@ -348,7 +348,7 @@ class Dataset:
         else:
             return res, T_result
     
-    def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
+    def plot(self, tval, t=None, xlabel=r'2$\theta$', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour='g'):
         """Return a 2D plot of the diffraction data
