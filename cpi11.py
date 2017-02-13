@@ -367,8 +367,8 @@ class Dataset:
             self.zpe = zpe
         result = []
         for i, dset in enumerate(self.data[idxs[0]:idxs[1] + 1]):
-            new_x = wavelength / (2 * np.sin((dset['x'].values - self.zpe) \
-                                             / 2))
+            new_x = self.wavelength / (2 * np.sin(((dset['x'].values - \
+                                self.zpe) * np.pi)/ 360.))
             new_dset = pd.DataFrame(np.column_stack((new_x, 
                                     dset['y'].values, dset['e'].values)))
             new_dset.columns=['x', 'y', 'e']
@@ -378,7 +378,7 @@ class Dataset:
                       log_fname=self.log_fname, wavelength=self.wavelength,
                       zpe=self.zpe)
         res.data = result
-        return result
+        return res
     
     def plot(self, tval, t=None, xlabel=r'2$\theta$', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
