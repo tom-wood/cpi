@@ -1,5 +1,6 @@
-#Version 0.1.2-beta
-#07/02/17: added yflip option to contour_plot() and contour_temp() methods
+#Version 0.2.1-beta
+#14/02/17: made plots return figure and axes instances; added multiple
+#lines options to plot method 
 
 import numpy as np
 import matplotlib as mpl
@@ -476,33 +477,55 @@ class Dataset:
     
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
-             y_range=None, linecolour='g'):
+             y_range=None, linecolour=None, labels=None, legend=True,
+             legend_loc=0):
         """Return a 2D plot of the diffraction data
         
         Args:
-            tval: which time/run number to plot
+            tval: which time/run number to plot (list if more than one)
             t: defaults to range(len(data))
             xlabel: label for x-axis
             ylabel: label for y-axis
             figsize: size of figure (inches by inches)
             x_range (list): x range
             y_range (list): y range
-            linecolour (str): colour of plotted line"""
+            linecolour (str or list): colour of plotted line(s)
+            labels (list): list of labels (if different from tvalues)
+            legend (bool): boolean to determine presence of legend
+            legend_loc: location of legend
+        Returns:
+            fig: figure instance
+            ax: axes instance
+        """
         if t is None:
             t = np.array(range(len(self.data)))
-        ti = np.abs(t - tval).argmin()
-        data_x = self.data[ti]['x'].values
-        data_y = self.data[ti]['y'].values
+        if type(tval) == int or type(tval) == float:
+            tval = [tval]
+        if type(linecolour) == str:
+            linecolour = [linecolour]
+        if type(labels) == type(None):
+            labels = [str(tv) for tv in tval]
+        tis = [np.abs(t - tv).argmin() for tv in tval]
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
-        ax.plot(data_x, data_y, color=linecolour)
+        for i, ti in enumerate(tis):
+            data_x = self.data[ti]['x'].values
+            data_y = self.data[ti]['y'].values
+            if type(linecolour) == type(None):
+                ax.plot(data_x, data_y, label=labels[i])
+            else:
+                ax.plot(data_x, data_y, color=linecolour[i], 
+                        label=labels[i])
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
+        if legend:
+            ax.legend(loc=legend_loc)
         if type(x_range) != type(None):
             ax.set_xlim(x_range[0], x_range[1])
         if type(y_range) != type(None):
             ax.set_ylim(y_range[0], y_range[1])
-        plt.tight_layout() 
+        fig.tight_layout() 
+        return fig, ax
     
     def plotQ(self, tval, t=None, xlabel=u'Q / \u00C5$^{-1}$', 
               ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
@@ -517,7 +540,12 @@ class Dataset:
             figsize: size of figure (inches by inches)
             x_range (list): x range
             y_range (list): y range
-            linecolour (str): colour of plotted line"""
+            linecolour (str): colour of plotted line
+
+        Returns:
+            fig: figure instance
+            ax: axes instance
+        """
         if type(t) == type(None):
             t = np.array(range(len(self.data)))
         ti = np.abs(t - tval).argmin()
@@ -532,13 +560,14 @@ class Dataset:
             ax.set_xlim(x_range[0], x_range[1])
         if type(y_range) != type(None):
             ax.set_ylim(y_range[0], y_range[1])
-        plt.tight_layout()       
+        fig.tight_layout()       
+        return fig, ax
         
-    def contour_plot(self, t=None, xlabel='Run number', ylabel=u'd / \u00C5',
-                     zlabel='Intensity / Counts', colour_num=20, 
-                     figsize=(10, 7), x_range=None, y_range=None, 
-                     z_range=None, xyflip=False, yflip=False, zscale=None,
-                     log_zlabel='log(Intensity / Counts)',
+    def contour_plot(self, t=None, xlabel='Run number', 
+                     ylabel=u'd / \u00C5', zlabel='Intensity / Counts', 
+                     colour_num=20, figsize=(10, 7), x_range=None, 
+                     y_range=None, z_range=None, xyflip=False, yflip=False,
+                     zscale=None, log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel='$\sqrt{Intensity / Counts}$'):
         """Return a contour plot of the data
         
@@ -558,6 +587,10 @@ class Dataset:
             zscale: 'log' for log scaling and 'sqrt' for square root
             log_zlabel (str): Title of colourbar when zscale='log'
             sqrt_zlabel (str): Title of colourbar when zscale='sqrt'
+        
+        Returns:
+            fig: figure instance
+            ax: axes instance
         """
         #26/01/16 rewrite
         #data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
@@ -604,6 +637,7 @@ class Dataset:
         else:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         plt.tight_layout()
+        return fig, ax
         
     def contour_temp(self, T, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
@@ -634,6 +668,11 @@ class Dataset:
             zscale: 'log' for log scaling and 'sqrt' for square root
             log_zlabel (str): Title of colourbar when zscale='log'
             sqrt_zlabel (str): Title of colourbar when zscale='sqrt'
+
+        Returns:
+            fig: figure instance
+            ax1: temperature line plot axes
+            ax2: contour plot axes
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
@@ -665,11 +704,13 @@ class Dataset:
             ax2.invert_yaxis()
         ax2.set_xlabel(xlabel)
         ax2.set_ylabel(ylabel)
-        ax2.tick_params(which='both', top=False, right=False, direction='out')
+        ax2.tick_params(which='both', top=False, right=False, 
+                        direction='out')
         ax2.set_xlim(t[0, 0], t[0, -1])
         ax1.plot(t[0, :], T, color=Tcolour)
         ax1.set_ylabel(ylabel2)
-        ax1.tick_params(which='both', top=False, right=False, direction='out')
+        ax1.tick_params(which='both', top=False, right=False, 
+                        direction='out')
         plt.setp(ax1.get_xticklabels(), visible=False)
         axins = inset_axes(ax2, width='5%', height='100%', loc=6,
                            bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
@@ -682,7 +723,8 @@ class Dataset:
         else:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         ax2.set_xlim(t[0, 0], t[0, -1])
-        plt.tight_layout(rect=(0, 0, 0.85, 1))
+        fig.tight_layout(rect=(0, 0, 0.85, 1))
+        return fig, ax1, ax2
     
     def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
                      ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg',
@@ -711,12 +753,19 @@ class Dataset:
             p_range (list): pressure range
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt'
+
+        Returns:
+            fig: figure instance
+            ax_cont: contour plot axes
+            ax_T: Temperature axes
+            ax_m: mass axes
+            ax_p: pressure axes
         """
-        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th) 
+        data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         igan = self.igan_data
         t = self.scan_times
-        igan_t, igan_T, igan_m, igan_p = [igan[:, 0], igan[:, 3], igan[:, 1],
-                                          igan[:, 2]]
+        igan_t, igan_T, igan_m, igan_p = [igan[:, 0], igan[:, 3], 
+                                          igan[:, 1], igan[:, 2]]
         if t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         if x_range:
@@ -778,7 +827,8 @@ class Dataset:
         if p_range:
             ax_p.set_ylim(p_range)
         plt.setp(ax_p.get_xticklabels(), visible=False)
-        plt.tight_layout(rect=(0, 0, 0.85, 1))
+        fig.tight_layout(rect=(0, 0, 0.85, 1))
+        return fig, ax_cont, ax_T, ax_m, ax_p
         
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', 
@@ -813,6 +863,10 @@ class Dataset:
             shareT (bool): assume that Temp axes are shared intra rows, 
             otherwise separate ticks for each one.
             colourbar (bool): determines presence of colour bar(s).
+
+        Returns:
+            fig: figure instance
+            axes: list of all axes instances
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         #work out grid space needed
@@ -971,7 +1025,8 @@ class Dataset:
                 else:
                     ax = fig.add_subplot(gs[g[0], g[1]], sharex=T_axes[g[1]])
             cont = ax.contourf(t_arrs[i], y_arrs[i], z_arrs[i], colour_num)
-            ax.tick_params(which='both', top=False, right=False, direction='out')
+            ax.tick_params(which='both', top=False, right=False, 
+                           direction='out')
             ax.set_xlim(t_arrs[i][0, 0], t_arrs[i][0, -1])
             if i in fr_indices:
                 ax.set_ylabel(ylabel)
@@ -994,6 +1049,7 @@ class Dataset:
                 else:
                     cbar.set_label(zlabel, rotation=270, labelpad=20)
             axes.append(ax)
+        return fig, axes
     
     def plot_animate(self, t_range, t=None, xlabel=u'd / \u00C5',
                      ylabel='Intensity / Counts', figsize=(10, 7), x_range=None,
