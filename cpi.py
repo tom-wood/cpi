@@ -527,6 +527,78 @@ class Dataset:
         fig.tight_layout() 
         return fig, ax
     
+    def get_deltad_over_d(self, tval, dvals, t=None):
+        """Return list of delta d over d arrays for tvals and dvals
+
+        Args:
+            tval: t value (i.e. run number)
+            dvals: list of d values to act as denominator
+            t: array of time values
+        Returns:
+            result: list of arrays of delta d over d values
+        """
+        if t is None:
+            t = np.array(range(len(self.data)))
+        if type(dvals) == int or type(dvals) == float:
+            dvals = [dvals]
+        ti = np.searchsorted(t, tval)
+        result = [(self.data[ti]['x'].values - dval) / dval for dval in 
+                  dvals]
+        return result
+
+    def plot_deltad_over_d(self, tval, dvals, t=None, 
+                           xlabel=r'$\frac{\Delta d}{d}$',
+                           ylabel='Normalized Intensity', figsize=(10, 7), 
+                           x_range=None, y_range=None, linecolour=None, 
+                           labels=None, legend=True, legend_loc=0):
+        """Return plot of delta d over d versus intensity
+
+        Args:
+            tval: t value (i.e. run number)
+            dvals: list of d values to act as denominator
+            t: array of time values
+            xlabel: label for x-axis
+            ylabel: label for y-axis
+            figsize: size of figure (inches by inches)
+            x_range (list): x range
+            y_range (list): y range
+            linecolour (str or list): colour of plotted line(s)
+            labels (list): list of labels (if different from tvalues)
+            legend (bool): boolean to determine presence of legend
+            legend_loc: location of legend
+        Returns:
+            fig: figure instance
+            ax: axes instance
+        """
+        if t is None:
+            t = np.array(range(len(self.data)))
+        ti = np.searchsorted(t, tval)
+        xvals = self.get_deltad_over_d(tval, dvals, t=t)
+        if x_range is None:
+            x_range = [xvals[-1].min(), xvals[0].max()]
+        if labels is None:
+            labels = [str(n) for n in range(len(xvals))]
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+        for i, xval in enumerate(xvals):
+            xis = [np.abs(xval - xr).argmin() for xr in x_range]
+            xis.sort()
+            data_x = xval[xis[0]:xis[1] + 1]
+            data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
+            data_y = (data_y - data_y.min()) / \
+                     ((data_y - data_y.min()).max())
+            if type(linecolour) == type(None):
+                ax.plot(data_x, data_y, label=labels[i])
+            else:
+                ax.plot(data_x, data_y, color=linecolour[i], 
+                        label=labels[i])
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if legend:
+            ax.legend(loc=legend_loc)
+        fig.tight_layout() 
+        return fig, ax
+
     def plotQ(self, tval, t=None, xlabel=u'Q / \u00C5$^{-1}$', 
               ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
               y_range=None, linecolour='g'):
