@@ -1,6 +1,5 @@
-#Version 0.2.1-beta
-#14/02/17: made plots return figure and axes instances; added multiple
-#lines options to plot method 
+#Version 0.2.2-beta
+#16/02/17: added xclip option to plot method
 
 import numpy as np
 import matplotlib as mpl
@@ -478,7 +477,7 @@ class Dataset:
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
-             legend_loc=0):
+             legend_loc=0, xclip=True):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -493,6 +492,7 @@ class Dataset:
             labels (list): list of labels (if different from tvalues)
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
+            xclip (bool): whether to clip data according to x_range or not
         Returns:
             fig: figure instance
             ax: axes instance
@@ -509,8 +509,15 @@ class Dataset:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         for i, ti in enumerate(tis):
-            data_x = self.data[ti]['x'].values
-            data_y = self.data[ti]['y'].values
+            if xclip and type(x_range) != type(None):
+                xis = [np.abs(self.data[ti]['x'].values - xr).argmin() 
+                       for xr in x_range]
+                xis.sort()
+                data_x = self.data[ti]['x'].values[xis[0]:xis[1] + 1]
+                data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
+            else:
+                data_x = self.data[ti]['x'].values
+                data_y = self.data[ti]['y'].values
             if type(linecolour) == type(None):
                 ax.plot(data_x, data_y, label=labels[i])
             else:

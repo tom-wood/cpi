@@ -1,5 +1,5 @@
-#Version 0.2.3-beta
-#16/02/17: added clip option to plot method
+#Version 0.2.2-beta
+#16/02/17: added xclip option to plot method and fixed twotheta_to_d bug
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
