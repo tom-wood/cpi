@@ -372,8 +372,8 @@ class Dataset:
                                     dset['y'].values, dset['e'].values)))
             new_dset.columns=['x', 'y', 'e']
             result.append(new_dset)
-        res = Dataset(self.filepath, self.expt_nums[indices[0]],
-                      self.expt_nums[indices[1]], suffix=self.suffix,
+        res = Dataset(self.filepath, int(self.expt_nums[indices[0]]),
+                      int(self.expt_nums[indices[1]]), suffix=self.suffix,
                       log_fname=self.log_fname, wavelength=self.wavelength,
                       zpe=self.zpe)
         res.data = result
