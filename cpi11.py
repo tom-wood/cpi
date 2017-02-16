@@ -1,5 +1,5 @@
 #Version 0.2.2-beta
-#16/02/17: added xclip option to plot method and fixed twotheta_to_d bug
+#16/02/17: made plot_deltad_over_d method normalize to linear background
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -462,7 +462,8 @@ class Dataset:
                            xlabel=r'$\frac{\Delta d}{d}$',
                            ylabel='Normalized Intensity', figsize=(10, 7), 
                            x_range=None, y_range=None, linecolour=None, 
-                           labels=None, legend=True, legend_loc=0):
+                           labels=None, legend=True, legend_loc=0,
+                           norm_pts=8):
         """Return plot of delta d over d versus intensity
 
         Args:
@@ -478,6 +479,8 @@ class Dataset:
             labels (list): list of labels (if different from tvalues)
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
+            norm_pts (int): number of points on either side of peak to 
+            use to take a linear background for normalizing intensity
         Returns:
             fig: figure instance
             ax: axes instance
@@ -497,8 +500,12 @@ class Dataset:
             xis.sort()
             data_x = xval[xis[0]:xis[1] + 1]
             data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
-            data_y = (data_y - data_y.min()) / \
-                     ((data_y - data_y.min()).max())
+            m, c = np.polyfit(np.concatenate((data_x[:norm_pts], 
+                                              data_x[-norm_pts:])),
+                              np.concatenate((data_y[:norm_pts], 
+                                              data_y[-norm_pts:])), 1)
+            data_y = data_y - (data_x * m + c)
+            data_y = data_y / data_y.max()
             if type(linecolour) == type(None):
                 ax.plot(data_x, data_y, label=labels[i])
             else:
