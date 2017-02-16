@@ -414,7 +414,7 @@ class Dataset:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         for i, ti in enumerate(tis):
-            if xclip:
+            if xclip and type(x_range) != type(None):
                 xis = [np.abs(self.data[ti]['x'].values - xr).argmin() 
                        for xr in x_range]
                 xis.sort()
