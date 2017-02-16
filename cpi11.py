@@ -1,5 +1,5 @@
-#Version 0.2.2-beta
-#15/02/17: added plot_deltad_over_d method
+#Version 0.2.3-beta
+#16/02/17: added clip option to plot method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -382,7 +382,7 @@ class Dataset:
     def plot(self, tval, t=None, xlabel=r'2$\theta$', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
-             legend_loc=0):
+             legend_loc=0, xclip=True):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -397,6 +397,7 @@ class Dataset:
             labels (list): list of labels (if different from tvalues)
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
+            xclip (bool): whether to clip data according to x_range or not
         Returns:
             fig: figure instance
             ax: axes instance
@@ -413,8 +414,15 @@ class Dataset:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
         for i, ti in enumerate(tis):
-            data_x = self.data[ti]['x'].values
-            data_y = self.data[ti]['y'].values
+            if xclip:
+                xis = [np.abs(self.data[ti]['x'].values - xr).argmin() 
+                       for xr in x_range]
+                xis.sort()
+                data_x = self.data[ti]['x'].values[xis[0]:xis[1] + 1]
+                data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
+            else:
+                data_x = self.data[ti]['x'].values
+                data_y = self.data[ti]['y'].values
             if type(linecolour) == type(None):
                 ax.plot(data_x, data_y, label=labels[i])
             else:
