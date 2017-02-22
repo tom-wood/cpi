@@ -1,5 +1,5 @@
-#Version 0.2.2-beta
-#16/02/17: made plot_deltad_over_d method normalize to linear background
+#Version 0.2.3-beta
+#22/02/17: added plot_reflected_peak method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -463,7 +463,7 @@ class Dataset:
                            ylabel='Normalized Intensity', figsize=(10, 7), 
                            x_range=None, y_range=None, linecolour=None, 
                            labels=None, legend=True, legend_loc=0,
-                           norm_pts=8):
+                           bgd_pts=8):
         """Return plot of delta d over d versus intensity
 
         Args:
@@ -479,7 +479,7 @@ class Dataset:
             labels (list): list of labels (if different from tvalues)
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
-            norm_pts (int): number of points on either side of peak to 
+            bgd_pts (int): number of points on either side of peak to 
             use to take a linear background for normalizing intensity
         Returns:
             fig: figure instance
@@ -500,10 +500,10 @@ class Dataset:
             xis.sort()
             data_x = xval[xis[0]:xis[1] + 1]
             data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
-            m, c = np.polyfit(np.concatenate((data_x[:norm_pts], 
-                                              data_x[-norm_pts:])),
-                              np.concatenate((data_y[:norm_pts], 
-                                              data_y[-norm_pts:])), 1)
+            m, c = np.polyfit(np.concatenate((data_x[:bgd_pts], 
+                                              data_x[-bgd_pts:])),
+                              np.concatenate((data_y[:bgd_pts], 
+                                              data_y[-bgd_pts:])), 1)
             data_y = data_y - (data_x * m + c)
             data_y = data_y / data_y.max()
             if type(linecolour) == type(None):
@@ -515,6 +515,81 @@ class Dataset:
         ax.set_ylabel(ylabel)
         if legend:
             ax.legend(loc=legend_loc)
+        fig.tight_layout() 
+        return fig, ax
+
+    def plot_reflected_peak(self, tval, t=None, xlabel=r'2$\theta$', 
+                            ylabel='Intensity / Counts', figsize=(10, 7),
+                            x_range=None, y_range=None, linecolour=None, 
+                            labels=None, legend=True, legend_loc=0,
+                            take_bgd=True, bgd_pts=8, centrepoint=None, 
+                            centreline=True):
+        """Return plot of delta d over d versus intensity
+
+        Args:
+            tval: t value (i.e. run number)
+            t: array of time values
+            xlabel: label for x-axis
+            ylabel: label for y-axis
+            figsize: size of figure (inches by inches)
+            x_range (list): x range
+            y_range (list): y range
+            linecolour (str or list): colour of plotted line(s)
+            labels (list): list of labels (if different from tvalues)
+            legend (bool): boolean to determine presence of legend
+            legend_loc: location of legend
+            take_bgd (bool): whether to remove a linear background or not
+            bgd_pts (int): number of points on either side of peak to 
+            use to take a linear background for normalizing intensity
+            centrepoint: point about which to reflect
+            centreline (bool): whether to plot line of reflection or not
+        Returns:
+            fig: figure instance
+            ax: axes instance
+        """
+        if t is None:
+            t = np.array(range(len(self.data)))
+        ti = np.searchsorted(t, tval)
+        if x_range is None:
+            x_range = [self.data[0]['x'].iloc[0],
+                       self.data[0]['x'].iloc[-1]]
+        xis = [np.abs(self.data[ti]['x'].values - xr).argmin() for xr in 
+               x_range]
+        if labels is None:
+            labels = ['original', 'reflected']
+        data_x = self.data[ti]['x'].values
+        data_y = self.data[ti]['y'].values
+        if take_bgd:
+            xvals = np.concatenate((data_x[xis[0]:xis[1] + 1][:bgd_pts],
+                                    data_x[xis[0]:xis[1] + 1][-bgd_pts:]))
+            yvals = np.concatenate((data_y[xis[0]:xis[1] + 1][:bgd_pts],
+                                    data_y[xis[0]:xis[1] + 1][-bgd_pts:]))
+            m, c = np.polyfit(xvals, yvals, 1)
+            data_y = data_y - (data_x * m + c)
+        if centrepoint is None:
+            cum_y = np.cumsum(data_y[xis[0]:xis[1] + 1])
+            centre_i = np.searchsorted(cum_y, cum_y[-1] / 2.) + xis[0]
+        else:
+            centre_i = np.searchsorted(data_x, centrepoint)
+        refl_x = 2 * data_x[centre_i] - data_x
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+        if linecolour is None:
+            ax.plot(data_x, data_y, label=labels[0])
+            ax.plot(refl_x, data_y, label=labels[1])
+        else:
+            ax.plot(data_x, data_y, label=labels[0], color=linecolour[0])
+            ax.plot(refl_x, data_y, label=labels[1], color=linecolour[1])
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if legend:
+            ax.legend(loc=legend_loc)
+        if type(x_range) != type(None):
+            ax.set_xlim(x_range[0], x_range[1])
+        if type(y_range) != type(None):
+            ax.set_ylim(y_range[0], y_range[1])
+        if centreline:
+            ax.axvline(data_x[centre_i], linestyle='dashed', color='k') 
         fig.tight_layout() 
         return fig, ax
        
