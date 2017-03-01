@@ -1,5 +1,5 @@
-#Version 0.2.2-beta
-#16/02/17: made plot_deltad_over_d method normalize to linear background
+#Version 0.2.3-beta
+#01/03/17: added plot_run_nums option to contour_igan
 
 import numpy as np
 import matplotlib as mpl
@@ -818,7 +818,8 @@ class Dataset:
                      height_ratios=[1, 1, 1, 2], zscale=None, 
                      log_zlabel='log(Intensity / Counts)',
                      sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
-                     T_range=None, m_range=None, p_range=None):
+                     T_range=None, m_range=None, p_range=None,
+                     plot_run_nums=False, run_num_ticks=5):
         """Return a contour plot of the data
         
         Args:
@@ -836,6 +837,9 @@ class Dataset:
             p_range (list): pressure range
             height_ratios: ratios of heights of subplots
             zscale: can be 'log' or 'sqrt'
+            plot_run_nums (bool): whether to plot run numbers as second
+            x axis or not.
+            run_num_ticks: number of ticks if plot_run_nums is True
 
         Returns:
             fig: figure instance
@@ -851,11 +855,15 @@ class Dataset:
                                           igan[:, 1], igan[:, 2]]
         if t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
+        if plot_run_nums:
+            t2 = self.get_run_numbers()
         if x_range:
             i0, i1 = [np.abs(t[0, :] - val).argmin() for val in x_range]
             t = t[:, i0:i1 + 1]
             data_y = data_y[:, i0:i1 + 1]
             data_z = data_z[:, i0:i1 + 1]
+            if plot_run_nums:
+                t2 = t2[i0:i1]
         if y_range:
             i0, i1 = [np.abs(data_y[:, 0] - val).argmin() for val in y_range]
             t = t[i0:i1 + 1, :]
@@ -910,7 +918,18 @@ class Dataset:
         if p_range:
             ax_p.set_ylim(p_range)
         plt.setp(ax_p.get_xticklabels(), visible=False)
+        if plot_run_nums:
+            ax_rn = ax_cont.twiny()
+            ax_rn.set_xlim(ax_cont.get_xlim())
+            ax_rn.set_xlabel('Run numbers')
+            tick_is = range(0, len(t2), len(t2) / run_num_ticks)
+            rn_labels = [str(t2[i]) for i in tick_is]
+            rn_tick_pos = [t[0][i] for i in tick_is]
+            ax_rn.set_xticks(rn_tick_pos)
+            ax_rn.set_xticklabels(rn_labels)
         fig.tight_layout(rect=(0, 0, 0.85, 1))
+        if plot_run_nums:
+            return fig, ax_cont, ax_T, ax_m, ax_p, ax_rn
         return fig, ax_cont, ax_T, ax_m, ax_p
         
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
