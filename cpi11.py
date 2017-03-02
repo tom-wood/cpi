@@ -1,5 +1,5 @@
-#Version 0.2.3-beta
-#22/02/17: added plot_reflected_peak method
+#Version 0.2.4-beta
+#02/03/17: Added waterfall options to plot method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -382,7 +382,8 @@ class Dataset:
     def plot(self, tval, t=None, xlabel=r'2$\theta$', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
-             legend_loc=0, xclip=True):
+             legend_loc=0, xclip=True, normalize=False, 
+             waterfall_offset_x=0, waterfall_offset_y=0):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -398,6 +399,9 @@ class Dataset:
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
             xclip (bool): whether to clip data according to x_range or not
+            normalize (bool): whether to normalize data or not
+            waterfall_offset_x: for plotting waterfall plots, x offset
+            waterfall_offset_y: for plotting waterfall plots, y offset
         Returns:
             fig: figure instance
             ax: axes instance
@@ -418,11 +422,18 @@ class Dataset:
                 xis = [np.abs(self.data[ti]['x'].values - xr).argmin() 
                        for xr in x_range]
                 xis.sort()
-                data_x = self.data[ti]['x'].values[xis[0]:xis[1] + 1]
-                data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
+                data_x = np.copy(self.data[ti]['x'].values[xis[0]:xis[1] \
+                                                           + 1])
+                data_y = np.copy(self.data[ti]['y'].values[xis[0]:xis[1] \
+                                                           + 1])
             else:
-                data_x = self.data[ti]['x'].values
-                data_y = self.data[ti]['y'].values
+                data_x = np.copy(self.data[ti]['x'].values)
+                data_y = np.copy(self.data[ti]['y'].values)
+            if normalize:
+                data_y = (data_y - data_y.min()) / \
+                        (data_y - data_y.min()).max()
+            data_x += (waterfall_offset_x * i)
+            data_y += (waterfall_offset_y * i)
             if type(linecolour) == type(None):
                 ax.plot(data_x, data_y, label=labels[i])
             else:
