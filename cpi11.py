@@ -1,6 +1,5 @@
-#Version 0.3.0-beta
-#03/03/17: suppressed ipython magic; added support for multiple mac scans
-#via scans option (default)
+#Version 0.4.0-beta
+#03/03/17: added basic support for PSD data
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -85,11 +84,19 @@ class PlotDefaults():
 
 class Dataset:
     def __init__(self, filepath, first_file_number, last_file_number,
-                 suffix='_reb_0002.xye', log_fname=None,
+                 detector='mac', mac_suffix='_reb_0002.xye', 
+                 psd_suffix='_summed.xye', log_fname=None,
                  wavelength=0.8527, zpe=0):
         self.filepath = filepath
-        self.suffix = suffix
         self.expt_nums = range(first_file_number, last_file_number + 1)
+        if detector.lower() == 'mac':
+            self.detector = 'mac'
+        elif detector.lower() == 'psd':
+            self.detector = 'psd'
+        else:
+            print 'detector must be "mac" or "psd"'
+        self.mac_suffix = mac_suffix
+        self.psd_suffix = psd_suffix
         self.beam_offs = []
         self.Tvals = []
         self._assign_log_fname(log_fname)
@@ -101,21 +108,17 @@ class Dataset:
         return np.array(self.expt_nums)
 
     def get_expt_fnames_all(self, scans=True): 
-        if scans:
-            return [self.filepath + str(n) + '-mac-???' + self.suffix for 
-                    n in self.expt_nums]
-        else:
-            return [self.filepath + str(n) + '-mac-001' + self.suffix for 
-                    n in self.expt_nums]
-
-    def _str_to_int(n):
-        n = str(n)
-        if len(n) == 1:
-            return '00' + n
-        elif len(n) == 2:
-            return '0' + n
-        else:
-            return n
+        """Return all experiment file names"""
+        if self.detector == 'psd':
+            return [self.filepath + str(n) + '-mythen' + self.psd_suffix
+                    for n in self.expt_nums]
+        elif self.detector == 'mac':
+            if scans:
+                return [self.filepath + str(n) + '-mac-???' + 
+                        self.mac_suffix for n in self.expt_nums]
+            else:
+                return [self.filepath + str(n) + '-mac-001' + 
+                        self.mac_suffix for n in self.expt_nums]
 
     def get_expt_fnames(self, print_missing=True, scans=True):
         result = []
@@ -123,6 +126,7 @@ class Dataset:
         fnames_all = self.get_expt_fnames_all(scans)
         file_list = [self.filepath + fl for fl in 
                      os.listdir(self.filepath)]
+        suppress = 0
         if scans:
             for i, f in enumerate(fnames_all):
                 matches = []
@@ -376,9 +380,10 @@ class Dataset:
                   i % sum_num != 0:
                     T_result.append(np.mean(T_sum))
         res = Dataset(self.filepath, self.expt_nums[indices[0]], 
-                      self.expt_nums[indices[1]], suffix=self.suffix,
-                      log_fname=self.log_fname, wavelength=self.wavelength,
-                      zpe=self.zpe)
+                      self.expt_nums[indices[1]], detector=self.detector,
+                      mac_suffix=self.mac_suffix, 
+                      psd_suffix=self.psd_suffix, log_fname=self.log_fname,
+                      wavelength=self.wavelength, zpe=self.zpe)
         res.data = result
         res.expt_nums = t_result
         if T is None:
@@ -407,9 +412,10 @@ class Dataset:
             new_dset.columns=['x', 'y', 'e']
             result.append(new_dset)
         res = Dataset(self.filepath, int(self.expt_nums[indices[0]]),
-                      int(self.expt_nums[indices[1]]), suffix=self.suffix,
-                      log_fname=self.log_fname, wavelength=self.wavelength,
-                      zpe=self.zpe)
+                      int(self.expt_nums[indices[1]]), 
+                      detector=self.detctor, mac_suffix=self.mac_suffix,
+                      psd_suffix=self.psd_suffix, log_fname=self.log_fname,
+                      wavelength=self.wavelength, zpe=self.zpe)
         res.data = result
         return res
     
