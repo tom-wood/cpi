@@ -1,5 +1,6 @@
-#Version 0.2.4-beta
-#02/03/17: Added waterfall options to plot method
+#Version 0.3.0-beta
+#03/03/17: suppressed ipython magic; added support for multiple mac scans
+#via scans option (default)
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -7,14 +8,14 @@ import pandas as pd #used mainly for the pd.read_csv function (very fast)
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
-import re
-from sys import platform
-from IPython import get_ipython
-ipy = get_ipython()
-if platform == 'linux2':
-    ipy.magic("matplotlib qt5")
-else:
-    ipy.magic("matplotlib qt")
+import fnmatch
+#from sys import platform
+#from IPython import get_ipython
+#ipy = get_ipython()
+#if platform == 'linux2':
+#    ipy.magic("matplotlib qt5")
+#else:
+#    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
@@ -84,7 +85,7 @@ class PlotDefaults():
 
 class Dataset:
     def __init__(self, filepath, first_file_number, last_file_number,
-                 suffix='-mac-001_reb_0002.xye', log_fname=None,
+                 suffix='_reb_0002.xye', log_fname=None,
                  wavelength=0.8527, zpe=0):
         self.filepath = filepath
         self.suffix = suffix
@@ -99,30 +100,63 @@ class Dataset:
         """Return array of run numbers"""
         return np.array(self.expt_nums)
 
-    def get_expt_fnames_all(self): 
-        return [self.filepath + str(n) + self.suffix for n in 
-                self.expt_nums]
+    def get_expt_fnames_all(self, scans=True): 
+        if scans:
+            return [self.filepath + str(n) + '-mac-???' + self.suffix for 
+                    n in self.expt_nums]
+        else:
+            return [self.filepath + str(n) + '-mac-001' + self.suffix for 
+                    n in self.expt_nums]
 
-    def get_expt_fnames(self, print_missing=True):
+    def _str_to_int(n):
+        n = str(n)
+        if len(n) == 1:
+            return '00' + n
+        elif len(n) == 2:
+            return '0' + n
+        else:
+            return n
+
+    def get_expt_fnames(self, print_missing=True, scans=True):
         result = []
         #missing = []
-        fnames_all = self.get_expt_fnames_all()
-        file_list = [self.filepath + fl for fl in os.listdir(self.filepath)]
-        for i, f in enumerate(fnames_all):
-            if f in file_list:
-                result.append(f)
-            else:
-                result.append('')
-                #missing.append(self.expt_nums[i])
-                if print_missing:
-                    print 'File %d is missing' % self.expt_nums[i]
-                    print f
+        fnames_all = self.get_expt_fnames_all(scans)
+        file_list = [self.filepath + fl for fl in 
+                     os.listdir(self.filepath)]
+        if scans:
+            for i, f in enumerate(fnames_all):
+                matches = []
+                for i1, fn in enumerate(file_list):
+                    if fnmatch.fnmatch(fn, f):
+                        matches.append(fn)
+                matches.sort()
+                result += matches
+                if not matches:
+                    if suppress > 0:
+                        suppress -= 1
+                        continue
+                    else:
+                        result.append('')
+                        if print_missing:
+                            print 'File %d is missing' % self.expt_nums[i]
+                            print f
+                suppress = len(matches) - 1
+        else:
+            for i, f in enumerate(fnames_all):
+                if f in file_list:
+                    result.append(f)
+                else:
+                    result.append('')
+                    #missing.append(self.expt_nums[i])
+                    if print_missing:
+                        print 'File %d is missing' % self.expt_nums[i]
+                        print f
         return result
 
-    def get_data(self, print_missing=True):
+    def get_data(self, print_missing=True, scans=True):
         data = []
         first_missing = False
-        expt_fnames = self.get_expt_fnames(print_missing=print_missing)
+        expt_fnames = self.get_expt_fnames(print_missing, scans)
         bo_indices = [self.expt_nums.index(bo) for bo in self.beam_offs]
         expt_fnames = ['' if i in bo_indices else fname for i, fname in
                        enumerate(expt_fnames)]
