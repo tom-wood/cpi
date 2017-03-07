@@ -260,7 +260,7 @@ class Dataset:
         """
         if type(rn_range) != type(None):
             if rn_from_zero:
-                rn_range = [self.first_file_number + rn for rn in rn_range]
+                rn_range = [self.expt_nums[0] + rn for rn in rn_range]
             indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
                        in rn_range]
             indices += [0, self.data[0].shape[0] -1]
