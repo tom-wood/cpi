@@ -1,5 +1,5 @@
-#Version 0.4.0-beta
-#03/03/17: added basic support for PSD data
+#Version 0.4.1-beta
+#07/03/17: fixed get_max_intensity method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -248,11 +248,22 @@ class Dataset:
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
 
-    def get_max_intensity(self, rn_range=None, tth_range=None):
-        """Return maximum intensity recorded within a certain range"""
+    def get_max_intensity(self, rn_range=None, tth_range=None,
+                          rn_from_zero=True):
+        """Return maximum intensity recorded within a certain range
+        
+        Args:
+            rn_range (list): range of run numbers
+            tth_range (list): range of two theta values
+            rn_from_zero (bool): whether to take run numbers from zero or
+            from first_file_number
+        """
         if type(rn_range) != type(None):
+            if rn_from_zero:
+                rn_range = [self.first_file_number + rn for rn in rn_range]
             indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
                        in rn_range]
+            indices += [0, self.data[0].shape[0] -1]
         else:
             indices = None
         tth, intensity = self.data_xy(indices)
