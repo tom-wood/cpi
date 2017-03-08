@@ -1,5 +1,5 @@
 #Version 0.4.1-beta
-#07/03/17: fixed get_max_intensity method
+#08/03/17: fixed typo in twotheta_to_d method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -424,7 +424,7 @@ class Dataset:
             result.append(new_dset)
         res = Dataset(self.filepath, int(self.expt_nums[indices[0]]),
                       int(self.expt_nums[indices[1]]), 
-                      detector=self.detctor, mac_suffix=self.mac_suffix,
+                      detector=self.detector, mac_suffix=self.mac_suffix,
                       psd_suffix=self.psd_suffix, log_fname=self.log_fname,
                       wavelength=self.wavelength, zpe=self.zpe)
         res.data = result
