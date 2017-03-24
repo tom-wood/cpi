@@ -1,5 +1,5 @@
-#Version 0.2.4-beta
-#02/03/17: Added waterfall options to plot method
+#Version 0.2.5-beta
+#24/03/17: removed involuntary use of ipython magic
 
 import numpy as np
 import matplotlib as mpl
@@ -9,13 +9,13 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import re
-from sys import platform
-from IPython import get_ipython
-ipy = get_ipython()
-if platform == 'linux2':
-    ipy.magic("matplotlib qt5")
-else:
-    ipy.magic("matplotlib qt")
+#from sys import platform
+#from IPython import get_ipython
+#ipy = get_ipython()
+#if platform == 'linux2':
+#    ipy.magic("matplotlib qt5")
+#else:
+#    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
