@@ -1,5 +1,6 @@
-#Version 0.2.5-beta
-#24/03/17: removed involuntary use of ipython magic
+#Version 0.2.6-beta
+#24/03/17: reworked get_igan_data to give a float64 array and allowed
+#getting igan_data from other datasets; same with get_scan_times.
 
 import numpy as np
 import matplotlib as mpl
@@ -106,8 +107,26 @@ class Dataset:
         self.beam_offs3 = []
         self.Tvals = []
 
-    def get_scan_times(self, Tstring=None, beam_off_time=120): 
-        """Assign log starts, ends, T and beam current attributes"""
+    def get_scan_times(self, Tstring=None, beam_off_time=120,
+                       dataset=None): 
+        """Assign log starts, ends, T and beam current attributes
+        
+        Args:
+            Tstring: if temperature wanted from the log files
+            beam_off_time: time after which to consider the beam as off
+            in seconds (should be longer than single scan time).
+            dataset: Dataset from which to get values (to save on memory
+            and computational time).
+        """
+        if dataset:
+            self.scan_times = dataset.scan_times
+            self.lstarts = dataset.lstarts
+            self.lends = dataset.lends
+            self.av_bcs = dataset.av_bcs
+            self.beam_offs = dataset.beam_offs
+            self.beam_offs2 = dataset.beam_offs2
+            if Tstring:
+                self.T_vals = dataset.T_vals
         lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2, beam_offs3 \
                 = [], [], [], [], [], [], []
         if self.beamline == 'Polaris':
@@ -199,6 +218,7 @@ class Dataset:
         self.beam_offs2 = beam_offs2
         if Tstring:
             self.T_vals = T_vals
+        return
 
     def get_run_numbers(self):
         """Return array of run numbers (accounting for beam offs)"""
@@ -268,7 +288,17 @@ class Dataset:
         self.data = data
 
     def get_igan_data(self, igan_number, filepath_igan=None):
-        """Return IGAn data for given sample number"""
+        """Return IGAn data for given sample number
+
+        Args:
+            igan_number: if not an integer then must be another dataset
+            with igan_data already associated with it.
+            filepath_igan: used to specify igan filepath if different to
+            normal filepath.
+        """
+        if type(igan_number) != int:
+            self.igan_data = igan_number.igan_data
+            return
         if len(self.lstarts) == 0:
             print 'You need to run Dataset.get_scan_times() before \
                     Dataset.get_igan_data()'
@@ -310,7 +340,8 @@ class Dataset:
                     igan_times[i]
             igan_datasets.append(igan_dataset)
         igan_data = np.row_stack(igan_datasets)
-        self.igan_data = igan_data
+        self.igan_data = igan_data.astype('float64')
+        return
 
    #data_xy() only works if all files are the same length
     #might need future-proofing at some point.
