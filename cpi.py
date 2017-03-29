@@ -1,6 +1,6 @@
-#Version 0.2.6-beta
-#24/03/17: reworked get_igan_data to give a float64 array and allowed
-#getting igan_data from other datasets; same with get_scan_times.
+#Version 0.2.7-beta
+#29/03/17: fixed issue in get_scan_times() when dataset was specified;
+#added dataset option to get_data() method
 
 import numpy as np
 import matplotlib as mpl
@@ -127,6 +127,7 @@ class Dataset:
             self.beam_offs2 = dataset.beam_offs2
             if Tstring:
                 self.T_vals = dataset.T_vals
+            return
         lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2, beam_offs3 \
                 = [], [], [], [], [], [], []
         if self.beamline == 'Polaris':
@@ -255,7 +256,16 @@ class Dataset:
                     print f
         return result
 
-    def get_data(self, print_missing=True):
+    def get_data(self, print_missing=True, dataset=None):
+        """Get diffraction data
+
+        Args:
+            print_missing (bool): whether to print the missing filenames
+            dataset: if specified then borrows data from other dataset
+        """
+        if dataset:
+            self.data = dataset.data
+            return
         data = []
         first_missing = False
         expt_fnames = self.get_expt_fnames(print_missing=print_missing)
@@ -286,6 +296,7 @@ class Dataset:
                                          'e' : \
                                     np.zeros(data[marker - 1].shape[0])}))
         self.data = data
+        return
 
     def get_igan_data(self, igan_number, filepath_igan=None):
         """Return IGAn data for given sample number
