@@ -726,6 +726,7 @@ class Dataset:
         Returns:
             fig: figure instance
             ax: axes instance
+            cbar: colourbar instance
         """
         #26/01/16 rewrite
         #data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
@@ -808,6 +809,7 @@ class Dataset:
             fig: figure instance
             ax1: temperature line plot axes
             ax2: contour plot axes
+            cbar: colourbar instance
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
@@ -899,6 +901,7 @@ class Dataset:
             ax_T: Temperature axes
             ax_m: mass axes
             ax_p: pressure axes
+            cbar: colourbar instance
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         igan = self.igan_data
@@ -1020,7 +1023,9 @@ class Dataset:
 
         Returns:
             fig: figure instance
-            axes: list of all axes instances
+            axes: list of all axes instances (includes inserted axis
+            and colourbar instance per contour plot if colourbar is True).
+             
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         #work out grid space needed
