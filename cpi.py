@@ -1,6 +1,5 @@
-#Version 0.2.7-beta
-#29/03/17: fixed issue in get_scan_times() when dataset was specified;
-#added dataset option to get_data() method
+#Version 0.2.8-beta
+#29/03/17: contour plots now return the colourbar axis/instance
 
 import numpy as np
 import matplotlib as mpl
@@ -773,7 +772,7 @@ class Dataset:
         else:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         plt.tight_layout()
-        return fig, ax
+        return fig, ax, cbar
         
     def contour_temp(self, T, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
@@ -860,7 +859,7 @@ class Dataset:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         ax2.set_xlim(t[0, 0], t[0, -1])
         fig.tight_layout(rect=(0, 0, 0.85, 1))
-        return fig, ax1, ax2
+        return fig, ax1, ax2, cbar
     
     def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
                      ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg',
@@ -982,8 +981,8 @@ class Dataset:
             ax_rn.set_xticklabels(rn_labels)
         fig.tight_layout(rect=(0, 0, 0.85, 1))
         if plot_run_nums:
-            return fig, ax_cont, ax_T, ax_m, ax_p, ax_rn
-        return fig, ax_cont, ax_T, ax_m, ax_p
+            return fig, ax_cont, ax_T, ax_m, ax_p, ax_rn, cbar
+        return fig, ax_cont, ax_T, ax_m, ax_p, cbar
         
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', 
@@ -1192,6 +1191,7 @@ class Dataset:
                 ax.set_xlabel(xlabel)
             else:
                 plt.setp(ax.get_xticklabels(), visible=False)
+            axes.append(ax)
             if colourbar:
                 axins = inset_axes(ax, width='5%', height='100%', loc=6,
                                    bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
@@ -1203,7 +1203,8 @@ class Dataset:
                     cbar.set_label(sqrt_zlabel, rotation=270, labelpad=30)
                 else:
                     cbar.set_label(zlabel, rotation=270, labelpad=20)
-            axes.append(ax)
+                axes.append(axins)
+                axes.append(cbar)
         return fig, axes
     
     def plot_animate(self, t_range, t=None, xlabel=u'd / \u00C5',
@@ -1265,6 +1266,7 @@ class Dataset:
         if save_fname:
             self.anim.save(save_fname, fps=10)
         plt.show()
+        return
     
     def contour_animate(self, T=None, t=None, xlabel='Run number', 
                         ylabel=u'd / \u00C5', 
@@ -1388,6 +1390,7 @@ class Dataset:
         if save_fname:
             self.anim.save(save_fname, fps=10)
         plt.show()    
+        return
         
     def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
