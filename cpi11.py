@@ -1,5 +1,5 @@
-#Version 0.4.1-beta
-#08/03/17: fixed typo in twotheta_to_d method
+#Version 0.4.2-beta
+#06/04/17: fixed small bug in get_data() method
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -164,6 +164,7 @@ class Dataset:
         bo_indices = [self.expt_nums.index(bo) for bo in self.beam_offs]
         expt_fnames = ['' if i in bo_indices else fname for i, fname in
                        enumerate(expt_fnames)]
+        marker = 0
         for i, f in enumerate(expt_fnames):
             if f:
                 marker = i

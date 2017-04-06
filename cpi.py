@@ -1,5 +1,5 @@
-#Version 0.2.8-beta
-#29/03/17: contour plots now return the colourbar axis/instance
+#Version 0.2.9-beta
+#06/04/17: fixed two small bugs in get_run_numbers() and get_data()
 
 import numpy as np
 import matplotlib as mpl
@@ -224,7 +224,10 @@ class Dataset:
         """Return array of run numbers (accounting for beam offs)"""
         run_nums = self.expt_nums[:]
         for i, bo in enumerate(self.beam_offs2):
-            run_nums.insert(i + bo[0],  run_nums[i + bo[0]] - 0.5)
+            if i + bo[0] >= len(run_nums):
+                run_nums.append(run_nums[-1] + 0.5)
+            else:
+                run_nums.insert(i + bo[0],  run_nums[i + bo[0]] - 0.5)
         return np.array(run_nums)
 
     def get_expt_fnames_all(self): 
@@ -273,6 +276,7 @@ class Dataset:
                        enumerate(expt_fnames)]
         for i, bo in enumerate(self.beam_offs2):
             expt_fnames.insert(i + bo[0],  '')
+        marker = 0
         for i, f in enumerate(expt_fnames):
             if f:
                 marker = i
