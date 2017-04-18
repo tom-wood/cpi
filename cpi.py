@@ -988,8 +988,8 @@ class Dataset:
             ax_rn.set_xticklabels(rn_labels)
         fig.tight_layout(rect=(0, 0, 0.85, 1))
         if plot_run_nums:
-            return fig, ax_cont, ax_T, ax_m, ax_p, ax_rn, cbar
-        return fig, ax_cont, ax_T, ax_m, ax_p, cbar
+            return fig, ax_cont, ax_m, ax_T, ax_p, ax_rn, cbar
+        return fig, ax_cont, ax_m, ax_T, ax_p, cbar
         
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', 
