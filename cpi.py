@@ -1,5 +1,5 @@
-#Version 0.2.9-beta
-#06/04/17: fixed two small bugs in get_run_numbers() and get_data()
+#Version 0.2.10-beta
+#18/04/17: swapped order in the contour IGAn plot
 
 import numpy as np
 import matplotlib as mpl
@@ -937,8 +937,8 @@ class Dataset:
         fig = plt.figure(figsize=figsize)
         gs = mpl.gridspec.GridSpec(4, 1, height_ratios=height_ratios)
         ax_cont = fig.add_subplot(gs[3, 0])
-        ax_T = fig.add_subplot(gs[2, 0], sharex=ax_cont)
-        ax_m = fig.add_subplot(gs[1, 0], sharex=ax_cont)
+        ax_T = fig.add_subplot(gs[1, 0], sharex=ax_cont)
+        ax_m = fig.add_subplot(gs[2, 0], sharex=ax_cont)
         ax_p = fig.add_subplot(gs[0, 0], sharex=ax_cont)
         cont = ax_cont.contourf(t, data_y, data_z, colour_num)
         ax_cont.set_xlabel(xlabel)
