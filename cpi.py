@@ -143,6 +143,7 @@ class Dataset:
             if len(log_files) > 0:
                 if log_files[0][3] == 'A':
                     fname_pre += 'ARIS00' #hack for new Polaris files
+                    print 'Modified Polaris log filenames'
         else:
             log_files = []
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
