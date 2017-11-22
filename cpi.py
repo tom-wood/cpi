@@ -239,9 +239,19 @@ class Dataset:
         else:
             suffix = '_b' + str(self.bank_num) + '_D.dat'
         if self.beamline == 'Polaris':
-            return [self.filepath + 'pol' + str(n) + suffix for n in self.expt_nums]
+            if max(self.expt_nums) < 100000:
+                return [self.filepath + 'pol' + str(n) + suffix for n in 
+                        self.expt_nums]
+            else:
+                if self.tof:
+                    suffix = '-b_' + str(self.bank_num) + '-TOF.dat'
+                else:
+                    suffix = '-b_' + str(self.bank_num) + '-d.dat'
+                return [self.filepath + 'POL' + str(n) + suffix for n in 
+                        self.expt_nums]
         elif self.beamline == 'Gem':
-            return [self.filepath + 'GEM' + str(n) + suffix for n in self.expt_nums]
+            return [self.filepath + 'GEM' + str(n) + suffix for n in 
+                    self.expt_nums]
         else:
             return
 
