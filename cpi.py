@@ -140,11 +140,9 @@ class Dataset:
         if self.filepath:
             fnames = os.listdir(self.filepath)
             log_files = [fname for fname in fnames if '.log' in fname]
-            print len(log_files)
             if len(log_files) > 0:
-                if log_files[0][3] == '0':
-                    fname_pre += '00' #hack for new Polaris files
-                    print fname_pre
+                if log_files[0][3] == 'A':
+                    fname_pre += 'ARIS00' #hack for new Polaris files
         else:
             log_files = []
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
