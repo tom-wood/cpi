@@ -158,12 +158,24 @@ class Dataset:
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
             lends.append(np.datetime64(log_data.iloc[-1, 0]))
             if Tstring:
-                T_vals.append(log_data.iloc[:, 2].values\
-                              [np.where(log_data.iloc[:, 1].values\
-                                        == 'temp2')])
-            bcs = np.where(log_data.iloc[:, 1].values == 'TS1')
+                if self.beamline == 'Polaris' and max(self.expt_nums) > \
+                   100000:
+                    T_vals.append(log_data.iloc[:, 2].values\
+                                  [np.where(log_data.iloc[:, 1].values\
+                                            == 'Temp_2')])
+                else:
+                    T_vals.append(log_data.iloc[:, 2].values\
+                                  [np.where(log_data.iloc[:, 1].values\
+                                            == 'temp2')])
+            if self.beamline == 'Polaris' and max(self.expt_nums) > 100000:
+                bcs = np.where(log_data.iloc[:, 1].values == \
+                               'TS1_beam_current')
+            else:
+                bcs = np.where(log_data.iloc[:, 1].values == 'TS1')
             beam_currents = log_data.iloc[:, 2].values[bcs]
-            bc_times = log_data.iloc[:, 0].values[bcs]
+            beam_real = np.where(beam_currents > -1)
+            beam_currents = beam_currents[beam_real]
+            bc_times = log_data.iloc[:, 0].values[bcs][beam_real]
             start_marker = 0 #determines whether beam offs at start of log
                              #file or end (ones in the middle are ignored)
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
