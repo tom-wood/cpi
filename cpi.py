@@ -124,8 +124,7 @@ class Dataset:
             self.av_bcs = dataset.av_bcs
             self.beam_offs = dataset.beam_offs
             self.beam_offs2 = dataset.beam_offs2
-            if Tstring:
-                self.T_vals = dataset.T_vals
+            self.T_vals = dataset.T_vals
             return
         lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2, beam_offs3 \
                 = [], [], [], [], [], [], []
