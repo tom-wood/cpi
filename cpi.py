@@ -417,6 +417,21 @@ class Dataset:
         else:
             i0, i1 = 0, tth.shape[1] - 1
         return intensity[i0:i1 + 1, :].max()
+
+    def get_min_intensity(self, rn_range=None, tth_range=None):
+        """Return minimum intensity recorded within a certain range"""
+        if type(rn_range) != type(None):
+            indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
+                       in rn_range]
+        else:
+            indices = None
+        tth, intensity = self.data_xy(indices)
+        if type(tth_range) != type(None):
+            i0, i1 = [np.searchsorted(tth[:, 0], tthval) for tthval in
+                      tth_range]
+        else:
+            i0, i1 = 0, tth.shape[1] - 1
+        return intensity[i0:i1 + 1, :].min()
         
     def x_range(self):
         if len(self.data) == 0:
