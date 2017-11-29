@@ -318,6 +318,7 @@ class Dataset:
                 else:
                     first_missing=True
         if first_missing:
+            marker = 0
             data.insert(0, pd.DataFrame({'x' : data[marker - 1]['x'].values, 
                                          'y' : \
                                          np.zeros(data[marker - 1].shape[0]),
@@ -402,15 +403,8 @@ class Dataset:
             data_x[:, i] = dset['x'].values[iy0:iy1 + 1]
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
-        
-    def get_max_intensity(self, rn_range=None, y_range=None):
-        """Return maximum intensity recorded within a certain range
-        
-        Args:
-            rn_range: list of start and end run numbers (if less than
-            actual first run number then added on to that).
-            y_range: list of start and end y values
-        """
+
+    def get_indices(rn_range, y_range):
         if type(rn_range) != type(None):
             if rn_range[0] < self.expt_nums[0]:
                 rn_range = [rn + self.expt_nums[0] for rn in rn_range]
@@ -424,6 +418,17 @@ class Dataset:
             indices += [i0, i1]
         else:
             indices += [0, self.data[0].shape[0] - 1]
+        return indices
+
+    def get_max_intensity(self, rn_range=None, y_range=None):
+        """Return maximum intensity recorded within a certain range
+        
+        Args:
+            rn_range: list of start and end run numbers (if less than
+            actual first run number then added on to that).
+            y_range: list of start and end y values
+        """
+        indices = self.get_indices(rn_range, y_range)
         intensity = self.data_xy(indices)[1]
         return intensity.max()
 
@@ -435,21 +440,24 @@ class Dataset:
             actual first run number then added on to that).
             y_range: list of start and end y values
         """
-        if type(rn_range) != type(None):
-            if rn_range[0] < self.expt_nums[0]:
-                rn_range = [rn + self.expt_nums[0] for rn in rn_range]
-            indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
-                       in rn_range]
-        else:
-            indices = [0, len(self.data) - 1]
-        if type(y_range) != type(None):
-            i0, i1 = [np.searchsorted(tth[:, 0], tthval) for tthval in
-                      tth_range]
-            indices += [i0, i1]
-        else:
-            indices += [0, self.data[0].shape[0] - 1]
+        indices = self.get_indices(rn_range, y_range)
         intensity = self.data_xy(indices)[1]
         return intensity.min()
+
+    def get_max_intensities(self, rn_range=None, y_range=None,
+                            full_output=True)
+        """Return maximum intensities (and y vals) for certain run numbers
+        
+        Args:
+            rn_range: list of start and end run numbers (if less than
+            actual first run number then added on to that).
+            y_range: list of start and end y values
+            full_output (bool): if True, return y values as well as
+            maximum intensities.
+        """
+        indices = self.get_indices(rn_range, y_range)
+        yvals, intensity = self.data_xy(indices)
+        return intensity.max()
         
     def x_range(self):
         if len(self.data) == 0:
