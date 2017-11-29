@@ -403,20 +403,29 @@ class Dataset:
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
         
-    def get_max_intensity(self, rn_range=None, tth_range=None):
-        """Return maximum intensity recorded within a certain range"""
+    def get_max_intensity(self, rn_range=None, y_range=None):
+        """Return maximum intensity recorded within a certain range
+        
+        Args:
+            rn_range: list of start and end run numbers (if less than
+            actual first run number then added on to that).
+            y_range: list of start and end y values
+        """
         if type(rn_range) != type(None):
+            if rn_range[0] < self.expt_nums[0]:
+                rn_range = [rn + self.expt_nums[0] for rn in rn_range]
             indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
                        in rn_range]
         else:
-            indices = None
-        tth, intensity = self.data_xy(indices)
-        if type(tth_range) != type(None):
+            indices = [0, len(self.data) - 1]
+        if type(y_range) != type(None):
             i0, i1 = [np.searchsorted(tth[:, 0], tthval) for tthval in
                       tth_range]
+            indices += [i0, i1]
         else:
-            i0, i1 = 0, tth.shape[1] - 1
-        return intensity[i0:i1 + 1, :].max()
+            indices += [0, self.data[0].shape[0] - 1]
+        intensity = self.data_xy(indices)[1]
+        return intensity.max()
 
     def get_min_intensity(self, rn_range=None, tth_range=None):
         """Return minimum intensity recorded within a certain range"""
