@@ -309,6 +309,11 @@ class Dataset:
                                         delim_whitespace=True,
                                         names=['x', 'y', 'e']))
             else:
+                if i not in bo_indices:
+                    self.beam_offs.append(self.expt_nums[i])
+                    self.beam_offs.sort()
+                    print "File %s missing, %d added to beam offs" \
+                            % (f, self.expt_nums[i])
                 if len(data):
                     data.append(pd.DataFrame({'x' : data[0]['x'].values, 
                                               'y' : \
@@ -317,13 +322,15 @@ class Dataset:
                                               np.zeros(data[0].shape[0])}))
                 else:
                     first_missing=True
-        if first_missing:
-            marker = 0
-            data.insert(0, pd.DataFrame({'x' : data[marker - 1]['x'].values, 
-                                         'y' : \
-                                         np.zeros(data[marker - 1].shape[0]),
-                                         'e' : \
+        if first_missing == True and len(data) > 0:
+            data.insert(0, 
+                        pd.DataFrame({'x' : data[marker - 1]['x'].values, 
+                                      'y' : \
+                                      np.zeros(data[marker - 1].shape[0]),
+                                      'e' : \
                                     np.zeros(data[marker - 1].shape[0])}))
+        else:
+            print "No datasets found"
         self.data = data
         return
 
@@ -457,7 +464,8 @@ class Dataset:
         """
         indices = self.get_indices(rn_range, y_range)
         yvals, intensity = self.data_xy(indices)
-        return intensity.max()
+        max_is = intensity.argmax(axis=0)
+        return 
         
     def x_range(self):
         if len(self.data) == 0:
