@@ -329,7 +329,7 @@ class Dataset:
                                       np.zeros(data[marker - 1].shape[0]),
                                       'e' : \
                                     np.zeros(data[marker - 1].shape[0])}))
-        else:
+        if len(data) == 0:
             print "No datasets found"
         self.data = data
         return
