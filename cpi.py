@@ -452,7 +452,7 @@ class Dataset:
         return intensity.min()
 
     def get_max_intensities(self, rn_range=None, y_range=None,
-                            full_output=True)
+                            full_output=True):
         """Return maximum intensities (and y vals) for certain run numbers
         
         Args:
