@@ -302,18 +302,22 @@ class Dataset:
         for i, bo in enumerate(self.beam_offs2):
             expt_fnames.insert(i + bo[0],  '')
         marker = 0
+        bo_indices2 = [bo[0] + i for i, bo in 
+                       enumerate(self.beam_offs2)]
+        i1 = -1 #this refers to index of beam_offs not beam_offs2
         for i, f in enumerate(expt_fnames):
+            i1 += 1
             if f:
                 marker = i
                 data.append(pd.read_csv(f, header=None, 
                                         delim_whitespace=True,
                                         names=['x', 'y', 'e']))
             else:
-                if i not in bo_indices:
-                    self.beam_offs.append(self.expt_nums[i])
+                if i1 not in bo_indices and i not in bo_indices2:
+                    self.beam_offs.append(self.expt_nums[i1])
                     self.beam_offs.sort()
                     print "File %s missing, %d added to beam offs" \
-                            % (f, self.expt_nums[i])
+                            % (f, self.expt_nums[i1])
                 if len(data):
                     data.append(pd.DataFrame({'x' : data[0]['x'].values, 
                                               'y' : \
@@ -322,6 +326,8 @@ class Dataset:
                                               np.zeros(data[0].shape[0])}))
                 else:
                     first_missing=True
+            if i in bo_indices2:
+                i1 -= 1
         if first_missing == True and len(data) > 0:
             data.insert(0, 
                         pd.DataFrame({'x' : data[marker - 1]['x'].values, 
