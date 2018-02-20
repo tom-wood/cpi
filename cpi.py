@@ -472,7 +472,7 @@ class Dataset:
         yvals, intensity = self.data_xy(indices)
         real_is = intensity.sum(axis=0).nonzero()
         max_is = (np.arange(len(real_is[0])), 
-                  intensity[real_is].argmax(axis=1))
+                  intensity.argmax(axis=0)[real_is])
         max_ints = intensity.T[real_is][max_is]
         if not full_output:
             return max_ints
@@ -495,7 +495,7 @@ class Dataset:
         yvals, intensity = self.data_xy(indices)
         real_is = intensity.sum(axis=0).nonzero()
         min_is = (np.arange(len(real_is[0])), 
-                  intensity[real_is].argmin(axis=1))
+                  intensity.argmin(axis=0)[real_is])
         min_ints = intensity.T[real_is][min_is]
         if not full_output:
             return min_ints
