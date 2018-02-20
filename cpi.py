@@ -111,7 +111,9 @@ class Dataset:
         """Assign log starts, ends, T and beam current attributes
         
         Args:
-            Tstring: if temperature wanted from the log files
+            Tstring: if temperature wanted from the log files; set to True
+            to use default (only tested on Polaris) or to string if 
+            bespoke needed.
             beam_off_time: time after which to consider the beam as off
             in seconds (should be longer than single scan time).
             dataset: Dataset from which to get values (to save on memory
@@ -158,15 +160,15 @@ class Dataset:
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
             lends.append(np.datetime64(log_data.iloc[-1, 0]))
             if Tstring:
-                if self.beamline == 'Polaris' and max(self.expt_nums) > \
-                   100000:
-                    T_vals.append(log_data.iloc[:, 2].values\
-                                  [np.where(log_data.iloc[:, 1].values\
-                                            == 'Temp_2')])
-                else:
-                    T_vals.append(log_data.iloc[:, 2].values\
-                                  [np.where(log_data.iloc[:, 1].values\
-                                            == 'temp2')])
+                if type(Tstring) != type(''):
+                    if self.beamline == 'Polaris' and max(self.expt_nums)\
+                       > 100000:
+                        Tstring = 'Temp_2'
+                    else:
+                        Tstring = 'temp2'
+                T_vals.append(log_data.iloc[:, 2].values\
+                              [np.where(log_data.iloc[:, 1].values\
+                                        == Tstring)])
             if self.beamline == 'Polaris' and max(self.expt_nums) > 100000:
                 bcs = np.where(log_data.iloc[:, 1].values == \
                                'TS1_beam_current')
