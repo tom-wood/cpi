@@ -1,5 +1,5 @@
-#Version 0.2.10-beta
-#18/04/17: swapped order in the contour IGAn plot
+#Version 0.2.11-beta
+#20/02/18: get_max/min_intensities all updated
 
 import numpy as np
 import matplotlib as mpl
