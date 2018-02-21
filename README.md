@@ -1,4 +1,4 @@
-# CPI/CPI11 (Contour Plotting for ISIS/I11)
+# cpi/cpi11 (Contour Plotting for ISIS/I11)
 CPI and CPI11 are programs defining a Dataset class (and some others) for
 use in plotting and manipulating data collected at the diffraction beamlines
 at ISIS (currently Gem and Polaris, although can be extended to others) and
@@ -11,7 +11,9 @@ You will need a functioning installation of python including numpy, scipy,
 matplotlib, pandas (cpi and cpi11 have been tested with canopy and 
 anaconda python distributions).
 
-## Description of classes/functions (CPI)
+## Description of classes/functions (cpi)
+Documentation on all classes/methods can be called by the command
+```help(class.method)```.
 ### PlotDefaults class
 This is a class for setting the matplotlib plotting defaults. Uset the 
 ```PlotDefaults.setp(param, value)``` method to set the parameters. 
@@ -19,7 +21,10 @@ Changeable parameters are found by ```help(PlotDefaults.setp)```.
 
 ### Dataset class
 The Dataset class contains methods for getting, plotting and maniupulating
-the data for ISIS beamlines.
+the data for ISIS beamlines. It is initialized by putting in 
+```filepath```, ```first_file_number```, ```last_file_number``` and
+```beamline``` arguments, as well as keyword arguments for ```beam_min```,
+```bank_num``` and ```tof``` (see below for defaults).
 
 #### Attributes
 The Dataset class contains the following attributes:
@@ -46,6 +51,70 @@ than ```beam_min``` (from ```get_scan_times``` method).
 log files; from ```get_scan_times``` method).
 13. ```Tvals```: list of temperature values for each run number (from 
 ```get_scan_times``` method).
+14. ```data```: list of pandas Dataframes for each run with x, y and e
+values (from ```get_data``` method).
+15. ```igan_data```: array of data from the IGAn (from 
+```get_igan_data``` method).
 
 And the following methods:
+1. ```get_scan_times()```: this method loads scan times from .log files
+within ```Dataset.filepath```. If ```Tstring``` is given a value then 
+temperature values will be read from the log files as well. Beam offs should
+be easily dealt with using this method.
+2. ```get_run_numbers()```: returns an array of run numbers (accounting for
+beam off periods).
+3. ```get_expt_fnames_all()```: returns a list of all experiment file names 
+(including missing ones).
+4. ```get_expt_fnames()```: returns a list of experiment file names 
+excluding missing ones).
+5. ```get_data()```: fetches diffraction data from .dat files.
+6. ```get_igan_data()```: if the IGAn equipment has been used, then this
+method can fetch the relevant data.
+7. ```data_xy()```: returns two arrays of x data and y data.
+8. ```get_indices()```: returns list of indices for the diffraction data
+given run number range and y range.
+9. ```get_max_intensity()```: returns the maximum intensity recorded within
+a certain range.
+10. ```get_min_intensity()```: returns the minimum intensity recorded within
+a certain range.
+11. ```get_max_intensities()```: returns array of the maximum intensity for
+each run within a certain range (will include y values and run numbers by
+default).
+12. ```get_min_intensities()```: returns array of the minimum intensity for
+each run within a certain range (will include y values and run numbers by
+default).
+13. ```to_xye()```: writes xye files for all diffraction runs within a
+Dataset (particularly useful combined with ```sum_dsets()``` method).
+14. ```sum_dsets()```: returns summed (mean) of diffraction runs within 
+specifiied range.
+15. ```plot()```: Returns a 2D plot of a diffraction run (specified by 
+```tval``` argument).
+16. ```get_deltad_over_d()```: Returns a list of delta d over d arrays given
+a run and a range of d values (useful for comparing strain effects).
+17. ```plot_deltad_over_d()```: Plots deltad over d for strain comparison.
+18. ```plotQ()```: plots using Q rather than d.
+19. ```contour_plot()```: will give a contour plot of the diffraction data.
+20. ```contour_temp()```: requires ```T``` argument (should use 
+```Dataset.T_vals``` if possible) and gives contour plot of the diffraction
+data with a plot of temperature above it.
+21. ```contour_igan()```: will give a contour plot along with the IGAn 
+pressure, mass and temperature readings.
+22. ```contour_mult()```: will plot multiple contour plots (with shared x
+ and y axes if wanted), enabling zooming in on certain regions (for 
+example).
+23. ```plot_animate()```: will produce an animation cycling through the 2D
+diffraction plots (requires a time range argument to be set).
+24. ```contour_animate()```: will produce an animation cycling through the
+2D diffraction plots along with the contour plot (and the temperature).
 
+### Other functions
+These are mostly (except for ```plotQ```) used for debugging purposes.
+1. ```get_expt_numbers```: returns list of experiment numbers.
+2. ```get_file_list```: returns list of files at filepath.
+3. ```get_expt_fnames_all```: returns list of all dataset filenames.
+4. ```get_expt_fnames```: returns list of all dataset filenames (excluding
+beam offs).
+5. ```plotQ```: can plot multiple datasets in Q (for example when comparing
+different banks).
+
+## Differences with cpi11 
