@@ -56,6 +56,7 @@ values (from ```get_data``` method).
 15. ```igan_data```: array of data from the IGAn (from 
 ```get_igan_data``` method).
 
+#### Methods
 And the following methods:
 1. ```get_scan_times()```: this method loads scan times from .log files
 within ```Dataset.filepath```. If ```Tstring``` is given a value then 
@@ -118,3 +119,36 @@ beam offs).
 different banks).
 
 ## Differences with cpi11 
+The PlotDefaults class remains unchanged. The Dataset class is now 
+initialized without ```beamline```, ```beam_min```, ```bank_num``` and
+```tof``` arguments and instead with keyword arguments of ```detector```, 
+```mac_suffix```, ```psd_suffix```, ```log_fname```, ```wavelength``` and
+```zpe``` (see below for more details
+
+### Dataset differences
+#### Attributes missing
+These are: ```beamline```, ```beam_min```, ```bank_num```, ```tof```,
+```scan_times```, ```lstarts```, ```lends```, ```av_bcs```, 
+```beam_offs2``` and ```igan_data```.
+
+#### New attributes
+1. ```detector```: either ```'mac'``` or ```'psd'```.
+2. ```mac_suffix```: string for mac filenames.
+3. ```psd_suffix```: string for psd filenames.
+4. ```wavelength```: wavelength in Angstroms.
+5. ```zpe```: zero error for 2theta.
+
+#### Methods missing
+These are: ```get_scan_times()``` and ```get_igan_data()```.
+
+#### New methods
+1. ```get_temps()```: Fetches temperatures for each run by reading all log
+files (by default).
+2. ```twotheta_to_d()```: returns a new dataset but with two theta x values
+as d values calculated according to wavelength and zero-error (note that
+d values will be in descending order).
+3. ```plot_reflected_peak()```: plot method for observing asymmetric peaks,
+by plotting the reflection of a peak against itself.
+
+### Other differences
+There are no extra functions in cpi11.
