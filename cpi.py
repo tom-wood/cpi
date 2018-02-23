@@ -1,5 +1,6 @@
-#Version 0.2.11-beta
-#20/02/18: get_max/min_intensities all updated
+#Version 0.2.12-beta
+#23/02/18: modified sum_dsets for better behaviour with time and 
+#temperature
 
 import numpy as np
 import matplotlib as mpl
@@ -104,7 +105,7 @@ class Dataset:
         self.beam_offs = []
         self.beam_offs2 = []
         self.beam_offs3 = []
-        self.Tvals = []
+        self.T_vals = []
 
     def get_scan_times(self, Tstring=None, beam_off_time=120,
                        dataset=None): 
@@ -551,12 +552,15 @@ class Dataset:
     def sum_dsets(self, sum_num, file_range=None, t=None, T=None):
         """Return mean summed datasets for sum_num interval
         Args:
-            sum_num (int): file range within which to sum data
+            sum_num (int): number of scans to average over
+            file_range: file range (list of two inclusive file numbers) 
+            within which to sum data.
             t (arr): time array
             T (arr): temperature array
         Returns:
-            result: Dataset of summed/averaged datasets with propogated errors
-            t_result: average time array if t != None
+            result: Dataset of summed/averaged datasets with propogated
+            errors (result.scan_times will include averaged scan times).
+            t_result: average time array if t != None.
             T_result: average temperature array if T != None
         """
         if file_range:
@@ -572,7 +576,8 @@ class Dataset:
                 if i:
                     if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
                         new_y = np.column_stack((new_y, dset['y'].values))
-                        new_e = np.column_stack((new_e, dset['e'].values**2))
+                        new_e = np.column_stack((new_e, 
+                                                 dset['e'].values**2))
                         new_e = np.sum(new_e, axis=1)**0.5 / (sum_num + 1)
                     else:
                         new_e = np.sum(new_e, axis=1)**0.5 / sum_num
@@ -592,47 +597,34 @@ class Dataset:
                         (dset['x'].values, np.mean(new_y, axis=1), new_e)))
                 new_dset.columns = ['x', 'y', 'e']
                 result.append(new_dset)                
-        if t is None:
-            t = self.scan_times[idxs[0]:idxs[1] + 1]
-        else:
+        if t is not None:
             t = t[idxs[0]:idxs[1] + 1]
-        t_result = []
-        for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
-            if i % sum_num == 0:
-                if i:
-                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
-                        t_sum = np.concatenate((t_sum, np.array([t[i]])))
-                    t_result.append(np.mean(t_sum))
-                t_sum = np.array([t[i]])
-            else:
-                t_sum = np.concatenate((t_sum, np.array([t[i]])))
-            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
-               i % sum_num != 0:
-                t_result.append(np.mean(t_sum))
+            t_result = self._sum_mean(t, idxs, sum_num)
         if T is not None:
-            T_result = []
-            for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
-                if i % sum_num == 0:
-                    if i:
-                        T_result.append(np.mean(T_sum))
-                        if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
-                            T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                    T_sum = np.array([T[i]])
-                else:
-                    T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and\
-                  i % sum_num != 0:
-                    T_result.append(np.mean(T_sum))
+            T = T[idxs[0]:idxs[1] + 1]
+            T_result = self._sum_mean(T, idxs, sum_num)
         res = Dataset(self.filepath, self.expt_nums[indices[0]], 
                       self.expt_nums[indices[1]], self.beamline, 
                       self.beam_min, self.bank_num, self.tof)
         res.data = result
-        res.scan_times = np.array(t_result)
-        if T is None:
+        if type(self.scan_times) == type(np.array([])) and\
+           len(self.scan_times):
+            new_st = self._sum_mean(self.scan_times[idxs[0]:idxs[1] + 1],
+                                    idxs, sum_num)
+            res.scan_times = np.array(new_st)
+        if type(self.T_vals) == type(np.array([])) and len(self.T_vals):
+            new_T = self._sum_mean(self.T_vals[idxs[0]:idxs[1] + 1], idxs,
+                                   sum_num)
+            res.T_vals = np.array(new_T)
+        if T is None and t is None:
             return res
-        else:
+        elif T is not None and t is None:
             return res, T_result
-    
+        elif t is not None and T is None:
+            return res, t_result
+        else:
+            return res, t_result, T_result
+
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
@@ -1514,7 +1506,24 @@ class Dataset:
             self.anim.save(save_fname, fps=10)
         plt.show()    
         return
-        
+     
+    def _sum_mean(self, v, idxs, sum_num):
+        """For use within sum_dsets (takes mean of v)"""
+        result = []
+        for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
+            if i % sum_num == 0:
+                if i:
+                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
+                        v_sum = np.concatenate((v_sum, np.array([v[i]])))
+                    result.append(np.mean(v_sum))
+                v_sum = np.array([v[i]])
+            else:
+                v_sum = np.concatenate((v_sum, np.array([v[i]])))
+            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
+               i % sum_num != 0:
+                result.append(np.mean(v_sum))
+        return result
+    
     def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
         for dset in self.data:
