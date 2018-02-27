@@ -1,5 +1,6 @@
-#Version 0.4.3-beta
-#20/02/18: added get_max/min_intensities methods
+#Version 0.4.4-beta
+#27/02/18: brought sum_dsets method into line with cpi (made more 
+#intuitive)
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -377,14 +378,16 @@ class Dataset:
         return        
     
     def sum_dsets(self, sum_num, file_range=None, t=None, T=None):
-        """Return mean summed datasets for sum_num interval
+        """Return mean summed datasets (and times) for sum_num interval
         Args:
             sum_num (int): file range within which to sum data
             t (arr): time array
             T (arr): temperature array
         Returns:
-            result: Dataset of summed/averaged datasets with propogated errors
-            t_result: average time array if t != None
+            result: Dataset of summed/averaged datasets with propogated 
+            errors.
+            t_result: average time array if t != None or average run number
+            if t is None.
             T_result: average temperature array if T != None
         """
         if file_range:
@@ -424,33 +427,10 @@ class Dataset:
             t = np.array([rn - rns[0] for rn in rns])
         else:
             t = t[idxs[0]:idxs[1] + 1]
-        t_result = []
-        for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
-            if i % sum_num == 0:
-                if i:
-                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
-                        t_sum = np.concatenate((t_sum, np.array([t[i]])))
-                    t_result.append(np.mean(t_sum))
-                t_sum = np.array([t[i]])
-            else:
-                t_sum = np.concatenate((t_sum, np.array([t[i]])))
-            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
-               i % sum_num != 0:
-                t_result.append(np.mean(t_sum))
+        t_result = self._sum_mean(t, idxs, sum_num)
         if T is not None:
-            T_result = []
-            for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
-                if i % sum_num == 0:
-                    if i:
-                        T_result.append(np.mean(T_sum))
-                        if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
-                            T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                    T_sum = np.array([T[i]])
-                else:
-                    T_sum = np.concatenate((T_sum, np.array([T[i]])))
-                if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and\
-                  i % sum_num != 0:
-                    T_result.append(np.mean(T_sum))
+            T = T[idxs[0]:idxs[1] + 1]
+            T_result = self._sum_mean(T, idxs, sum_num)
         res = Dataset(self.filepath, self.expt_nums[indices[0]], 
                       self.expt_nums[indices[1]], detector=self.detector,
                       mac_suffix=self.mac_suffix, 
@@ -459,9 +439,9 @@ class Dataset:
         res.data = result
         res.expt_nums = t_result
         if T is None:
-            return res
+            return res, t_result
         else:
-            return res, T_result
+            return res, t_result, T_result
 
     def twotheta_to_d(self, wavelength=None, zpe=None, file_range=None):
         """Return Dataset instance with d spacings rather than two theta"""
@@ -1293,6 +1273,23 @@ class Dataset:
             self.anim.save(save_fname, fps=10)
         plt.show()    
         
+    def _sum_mean(self, v, idxs, sum_num):
+        """For use within sum_dsets (takes mean of v)"""
+        result = []
+        for i in range(len(self.data[idxs[0]:idxs[1] + 1])):
+            if i % sum_num == 0:
+                if i:
+                    if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1:
+                        v_sum = np.concatenate((v_sum, np.array([v[i]])))
+                    result.append(np.mean(v_sum))
+                v_sum = np.array([v[i]])
+            else:
+                v_sum = np.concatenate((v_sum, np.array([v[i]])))
+            if i == len(self.data[idxs[0]:idxs[1] + 1]) - 1 and \
+               i % sum_num != 0:
+                result.append(np.mean(v_sum))
+        return result
+    
     def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
         for dset in self.data:
