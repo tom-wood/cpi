@@ -1,7 +1,3 @@
-#Version 0.2.12-beta
-#23/02/18: modified sum_dsets for better behaviour with time and 
-#temperature
-
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
