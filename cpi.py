@@ -139,6 +139,7 @@ class Dataset:
             lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
         else:
             fname_pre = ''
+            print('Recognised beamlines are "Polaris" or "Gem"')
         if self.filepath:
             fnames = os.listdir(self.filepath)
             log_files = [fname for fname in fnames if '.log' in fname]
