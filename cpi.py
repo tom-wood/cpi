@@ -374,6 +374,11 @@ class Dataset:
                 lsplit = l.split()
                 if 'begins' in lsplit:
                     m = str(months.index(lsplit[3][:3]) + 1)
+                    d = lsplit[2]
+                    if len(m) == 1:
+                        m = '0' + m
+                    if len(d) == 1:
+                        d = '0' + d
                     igan_dtimes.append('T'.join(['-'.join([lsplit[4], m, 
                                                            lsplit[2]]), 
                                                  lsplit[0]]))
