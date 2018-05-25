@@ -1,7 +1,3 @@
-#Version 0.2.12-beta
-#23/02/18: modified sum_dsets for better behaviour with time and 
-#temperature
-
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -139,6 +135,7 @@ class Dataset:
             lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
         else:
             fname_pre = ''
+            print('Recognised beamlines are "Polaris" or "Gem"')
         if self.filepath:
             fnames = os.listdir(self.filepath)
             log_files = [fname for fname in fnames if '.log' in fname]
@@ -374,6 +371,11 @@ class Dataset:
                 lsplit = l.split()
                 if 'begins' in lsplit:
                     m = str(months.index(lsplit[3][:3]) + 1)
+                    d = lsplit[2]
+                    if len(m) == 1:
+                        m = '0' + m
+                    if len(d) == 1:
+                        d = '0' + d
                     igan_dtimes.append('T'.join(['-'.join([lsplit[4], m, 
                                                            lsplit[2]]), 
                                                  lsplit[0]]))
