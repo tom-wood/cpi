@@ -103,6 +103,66 @@ class Dataset:
         self.beam_offs3 = []
         self.T_vals = []
 
+    def get_from_log(self, strings):
+        """Return all time and values for string within log files
+
+        Args:
+            strings (str or list): string(s) to be looked for in log file
+
+        Returns:
+            result: list of arrays with times on one column and string
+            values on the other.
+        """
+        if self.beamline == 'Polaris':
+            fname_pre = 'POL'
+            lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
+        elif self.beamline == 'Gem':
+            fname_pre = 'GEM'
+            lflocation = r'\\isis\inst$\ndxgem\Instrument\data'
+        else:
+            fname_pre = ''
+            print('Recognised beamlines are "Polaris" or "Gem"')
+        if self.filepath:
+            fnames = os.listdir(self.filepath)
+            log_files = [fname for fname in fnames if '.log' in fname]
+            if len(log_files) > 0:
+                if log_files[0][3] == 'A':
+                    fname_pre += 'ARIS00' #hack for new Polaris files
+                    print('Modified Polaris log filenames')
+        else:
+            log_files = []
+        log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
+                      self.expt_nums]
+        if type(strings) == str:
+            strings = [strings]
+        first_log = True
+        s_tvals = [[] for s in strings]
+        s_vals = [[] for s in strings]
+        for i1, lf in enumerate(log_fnames):
+            if re.split(r'\\|/', lf)[-1] not in log_files:
+                print("%s doesn't exist. Try looking in %s for files." \
+                        % (lf, lflocation))
+                return
+            log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
+                                   names=['Time', 'String', 'Value'])
+            if first_log:
+                lstart = np.datetime64(log_data.iloc[0, 0])
+                first_log = False
+            for i_s, s in enumerate(strings):
+                s_is = np.where(log_data.iloc[:, 1].values == s)
+                s_tvals[i_s].append((log_data.values[:, 0][s_is]))
+                s_vals[i_s].append(log_data.values[:, 2][s_is])
+        #if True:
+        #    return s_tvals, s_vals
+        s_tvals = [np.concatenate([np.array([(np.datetime64(s0) - lstart)/\
+                     np.timedelta64(3600, 's') for s0 in s1]) 
+                                   for s1 in s2]) for s2 in s_tvals]
+        s_vals = [np.concatenate([np.array(s0, dtype='float64') for s0 in
+                                  sv]) for sv in s_vals]
+        result = [np.column_stack((st, s_vals[i])) for i, st in 
+                  enumerate(s_tvals)]
+        return result
+
     def get_scan_times(self, Tstring=None, beam_off_time=120,
                        dataset=None): 
         """Assign log starts, ends, T and beam current attributes
@@ -1683,3 +1743,4 @@ def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
     if type(y_range) != type(None):
         ax.set_ylim(y_range[0], y_range[1])
     plt.tight_layout()  
+
