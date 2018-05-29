@@ -440,6 +440,11 @@ class Dataset:
                                                            lsplit[2]]), 
                                                  lsplit[0]]))
                     igan_types.append(lsplit[7:9])
+                elif 'stopped' in lsplit:
+                    print("%s %s stopped and not saved" \
+                          % (igan_types[-1][0], igan_types[-1][1]))
+                    del igan_dtimes[-1]
+                    del igan_types[-1]
         igan_times =  [(np.datetime64(idt) - self.lstarts[0]) / 
                        (np.timedelta64(1, 's') * 3600) for idt in 
                        igan_dtimes]
