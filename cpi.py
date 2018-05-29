@@ -446,11 +446,16 @@ class Dataset:
         for i, igan_run in enumerate(igan_types):
             it_fname = igan_fpath + igan_run[0] + '/' + igan_run[0] + \
                     igan_run[1] + '/' + 'Data.txt'
-            with open(it_fname, 'r') as f:
-                for i1, l in enumerate(f):
-                    if l.lstrip().rstrip() == '':
-                        it_header = i1
-                        break
+            try:
+                with open(it_fname, 'r') as f:
+                    for i1, l in enumerate(f):
+                        if l.lstrip().rstrip() == '':
+                            it_header = i1
+                            break
+            except IOError:
+                print("%s %s is lacking Data.txt therefore ignored"\
+                      % (igan_run[0], igan_run[1]))
+                continue
             igan_dataset = pd.read_csv(it_fname, header=it_header, 
                                        delim_whitespace=True, 
                                        usecols=[0, 1, 2, 3]).values[:-1, :]
