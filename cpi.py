@@ -698,7 +698,7 @@ class Dataset:
             return res, t_result, T_result
 
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
-             ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
+             ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
              legend_loc=0, xclip=True, normalize=False, 
              waterfall_offset_x=0, waterfall_offset_y=0):
@@ -845,8 +845,8 @@ class Dataset:
         return fig, ax
 
     def plotQ(self, tval, t=None, xlabel=u'Q / \u00C5$^{-1}$', 
-              ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, 
-              y_range=None, linecolour='g'):
+              ylabel='Normalized Intensity', figsize=(10, 7), 
+              x_range=None, y_range=None, linecolour='g'):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -881,11 +881,11 @@ class Dataset:
         return fig, ax
         
     def contour_plot(self, t=None, xlabel='Run number', 
-                     ylabel=u'd / \u00C5', zlabel='Intensity / Counts', 
+                     ylabel=u'd / \u00C5', zlabel='Normalized Intensity', 
                      colour_num=20, figsize=(10, 7), x_range=None, 
                      y_range=None, z_range=None, xyflip=False, yflip=False,
-                     zscale=None, log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel='$\sqrt{Intensity / Counts}$'):
+                     zscale=None, log_zlabel='log(Normalized Intensity)',
+                     sqrt_zlabel='$\sqrt{Normalized Intensity}$'):
         """Return a contour plot of the data
         
         Args:
@@ -959,12 +959,12 @@ class Dataset:
         
     def contour_temp(self, T, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
-                     zlabel='Intensity / Counts', colour_num=20, 
+                     zlabel='Normalized Intensity', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, yflip=False, Tcolour='g', 
                      height_ratios=[1, 2], zscale=None,
-                     log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$'):
+                     log_zlabel='log(Normalized Intensity)',
+                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$'):
         """Return a contour plot of the data
         
         Args:
@@ -1047,13 +1047,14 @@ class Dataset:
     
     def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
                      ylabel2=u'Temperature / \u00B0C', ylabel3='Mass / mg',
-                     ylabel4='Pressure / mbar', zlabel='Intensity / Counts',
-                     colour_num=20, figsize=(10, 10), x_range=None, 
-                     y_range=None, z_range=None, xyflip=False, Tcolour='g', 
+                     ylabel4='Pressure / mbar', 
+                     zlabel='Normalized Intensity', colour_num=20,
+                     figsize=(10, 10), x_range=None, y_range=None, 
+                     z_range=None, xyflip=False, Tcolour='g', 
                      masscolour='r', pressurecolour='b', 
                      height_ratios=[1, 1, 1, 2], zscale=None, 
-                     log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
+                     log_zlabel='log(Normalized Intensity)',
+                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
                      T_range=None, m_range=None, p_range=None,
                      plot_run_nums=False, run_num_ticks=5):
         """Return a contour plot of the data
@@ -1172,12 +1173,12 @@ class Dataset:
     def contour_mult(self, T=None, t=None, xlabel='Run number', 
                      ylabel=u'd / \u00C5', 
                      ylabel2=u'Temperature / \u00B0C',
-                     zlabel='Intensity / Counts', colour_num=20, 
+                     zlabel='Normalized Intensity', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, xyflip=False, Tcolour='g', 
                      height_ratios=None, width_ratios=None, zscale=None, 
-                     log_zlabel='log(Intensity / Counts)',
-                     sqrt_zlabel = '$\sqrt{Intensity / Counts}$', 
+                     log_zlabel='log(Normalized Intensity)',
+                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
                      grid=None, sharey=True, shareT=True, colourbar=False):
         """Return a contour plot of the data
         
@@ -1395,7 +1396,7 @@ class Dataset:
         return fig, axes
     
     def plot_animate(self, t_range, t=None, xlabel=u'd / \u00C5',
-                     ylabel='Intensity / Counts', figsize=(10, 7), x_range=None,
+                     ylabel='Normalized Intensity', figsize=(10, 7), x_range=None,
                      y_range=None, linecolour='g', interval=500, t_text='Run',
                      T=None, T_text='Temp', save_fname=None):
         """Return a 2D animated plot of the diffraction data
@@ -1458,12 +1459,12 @@ class Dataset:
     def contour_animate(self, T=None, t=None, xlabel='Run number', 
                         ylabel=u'd / \u00C5', 
                         ylabel2=u'Temperature / \u00B0C', 
-                        zlabel='Intensity / Counts',
+                        zlabel='Normalized Intensity',
                         colour_num=20, figsize=(10, 10), x_range=None, 
                         y_range=None, z_range=None, xyflip=False, 
                         Tcolour='g', height_ratios=None, zscale=None, 
-                        log_zlabel='log(Intensity / Counts)',
-                        sqrt_zlabel = '$\sqrt{Intensity\ /\ Counts}$', 
+                        log_zlabel='log(Normalized Intensity)',
+                        sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
                         linecolour='g', vline_colour='w', Tpt_colour='r', 
                         Tpt_size=10, interval=200, save_fname=None):
         """Return a contour plot of the data
@@ -1668,11 +1669,11 @@ def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None
         return result
 
 def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
-           last_file_number=None, filepath=None, fname_pre='pol', file_extensions=None,
-           bank_nums=5, xlabel=u'Q / \u00C5$^{-1}$', 
-           ylabel='Intensity / Counts', figsize=(10, 7), x_range=None, y_range=None,
-           linecolours=['g', 'r', 'b', 'm', 'c'], legend=True, legend_loc=0,
-           stack_shifts=None, normalize=False):
+          last_file_number=None, filepath=None, fname_pre='pol', 
+          file_extensions=None, bank_nums=5, xlabel=u'Q / \u00C5$^{-1}$', 
+          ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
+          y_range=None, linecolours=['g', 'r', 'b', 'm', 'c'], legend=True,
+          legend_loc=0, stack_shifts=None, normalize=False):
     """Return a 2D plot of the diffraction data in Q
         
     Args:
