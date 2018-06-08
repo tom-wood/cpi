@@ -758,6 +758,11 @@ class Dataset:
                 new_d.columns = ['x', 'y', 'e']
                 new_data.append(new_d)
                 new_scan_times.append(np.mean(self.scan_times[i:i + num]))
+            res = Dataset(self.filepath, self.expt_nums[indices[0]], 
+                          self.expt_nums[indices[1]], self.beamline, 
+                          self.beam_min, self.bank_num, self.tof)
+            res.data = new_data
+            res.scan_times = np.array(new_scan_times)
             av_arrs = []
             for i, arr in enumerate(other_arrs):
                 if arr.ndim == 1: #x data follows self.scan_times
@@ -774,7 +779,7 @@ class Dataset:
                         a_is = [0, len(arr) - 1]
                 else:
                     raise ValueError("Array %d has >2 columns" % i)
-        return new_scan_times, new_data, av_arrs
+        return res, av_arrs
 
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
