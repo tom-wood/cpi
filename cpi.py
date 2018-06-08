@@ -697,6 +697,83 @@ class Dataset:
         else:
             return res, t_result, T_result
 
+    def rolling_average(self, num, file_range=None, t_range=None,
+                        mean='cumulative', other_arrs=[]):
+        """Return dataset with rolling average values
+
+        Args:
+            num (int or float): width of rolling mean to be taken
+            file_range: file range (list of two inclusive file numbers) 
+            within which to sum data.
+            t_range: time range (list of two times) within which to sum 
+            data.
+            mean (str): 'cumulative' gives flat rolling mean;
+            'weighted' gives linearly weighted rolling mean;
+            'exponential' gives exponentially rolling mean.
+            other_arrs (list): other arrays to take rolling means of
+            (e.g. temperature or flow values etc.). If array has two
+            columns of data then the first column is taken to be a time
+            or file number, else it is assumed that it is the same length
+            as the dataset itself.
+
+        Returns:
+            av_dset: dataset with rolling mean values (av_dset.scan_times
+            adjusted accordingly).
+            av_arrs: list of rolling means for each arr in other_arrs
+        """
+        #do some checks
+        if type(file_range) != type(None) and type(t_range) != None:
+            raise ValueError("file_range and t_range both set")
+        for i, arr in enumerate(other_arrs):
+            if arr.ndim == 1:
+                if len(arr) != len(self.scan_times):
+                    raise ValueError("Array %d not " % (i) +\
+                                     "same length as scan_times")
+        if file_range:
+            indices = [self.expt_nums.index(fn) for fn in file_range]
+            bo_indices = np.array([b[0] for b in self.beam_offs2])
+            idxs = [i + np.searchsorted(bo_indices, i) for i in indices]
+        elif t_range:
+            idxs = [np.searchsorted(self.scan_times, t) for t in t_range]
+            indices = idxs
+            print("Using t_range means that new dataset's expt_nums" +\
+                  "values may be off kilter (beam_offs2 not counted)")
+        else:
+            indices = [0, len(self.expt_nums) - 1]
+            idxs = [0, len(self.data) - 1]
+        if mean == 'cumulative':
+            num = int(num)
+            i_range = range(idxs[0], idxs[1] + 1 - num)
+            new_data = []
+            for i in i_range:
+                new_y = np.column_stack([self.data[iv]['y'].values for iv
+                                         in range(i, i + num)])
+                new_y = np.mean(new_y, axis=1)
+                new_e = np.column_stack([self.data[iv]['e'].values for iv
+                                         in range(i, i + num)])
+                new_e = np.sqrt(np.sum(new_e**2, axis=1)) / float(num)
+                new_dset = pd.DataFrame(np.column_stack(\
+                        (self.data[i]['x'].values, new_y, new_e)))
+                new_dset.columns = ['x', 'y', 'e']
+                new_data.append(new_dset)
+            av_arrs = []
+            for i, arr in enumerate(other_arrs):
+                if arr.ndim == 1: #x data follows self.scan_times
+                    pass
+                elif arr.ndim == 2: #case where x data provided
+                    #doesn't account for beam_offs2 (this is a lot
+                    #of extra effort for an unlikely use case)
+                    if file_range:
+                        a_is = [np.searchsorted(arr, fn) for fn in
+                                file_range]
+                    elif t_range:
+                        a_is = [np.searchsorted(arr, t) for t in t_range]
+                    else:
+                        a_is = [0, len(arr) - 1]
+                else:
+                    raise ValueError("Array %d has >2 columns" % i)
+        return new_data, av_arrs
+
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
