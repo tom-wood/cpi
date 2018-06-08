@@ -745,6 +745,7 @@ class Dataset:
             num = int(num)
             i_range = range(idxs[0], idxs[1] + 1 - num)
             new_data = []
+            new_scan_times = []
             for i in i_range:
                 new_y = np.column_stack([self.data[iv]['y'].values for iv
                                          in range(i, i + num)])
@@ -752,10 +753,11 @@ class Dataset:
                 new_e = np.column_stack([self.data[iv]['e'].values for iv
                                          in range(i, i + num)])
                 new_e = np.sqrt(np.sum(new_e**2, axis=1)) / float(num)
-                new_dset = pd.DataFrame(np.column_stack(\
+                new_d = pd.DataFrame(np.column_stack(\
                         (self.data[i]['x'].values, new_y, new_e)))
-                new_dset.columns = ['x', 'y', 'e']
-                new_data.append(new_dset)
+                new_d.columns = ['x', 'y', 'e']
+                new_data.append(new_d)
+                new_scan_times.append(np.mean(self.scan_times[i:i + num]))
             av_arrs = []
             for i, arr in enumerate(other_arrs):
                 if arr.ndim == 1: #x data follows self.scan_times
@@ -772,7 +774,7 @@ class Dataset:
                         a_is = [0, len(arr) - 1]
                 else:
                     raise ValueError("Array %d has >2 columns" % i)
-        return new_data, av_arrs
+        return new_scan_times, new_data, av_arrs
 
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
              ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
