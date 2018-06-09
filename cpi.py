@@ -969,7 +969,7 @@ class Dataset:
                      colour_num=20, figsize=(10, 7), x_range=None, 
                      y_range=None, z_range=None, xyflip=False, yflip=False,
                      zscale=None, log_zlabel='log(Normalized Intensity)',
-                     sqrt_zlabel='$\sqrt{Normalized Intensity}$'):
+                     sqrt_zlabel='$\sqrt{Normalized\ Intensity}$'):
         """Return a contour plot of the data
         
         Args:
@@ -1048,7 +1048,7 @@ class Dataset:
                      z_range=None, yflip=False, Tcolour='g', 
                      height_ratios=[1, 2], zscale=None,
                      log_zlabel='log(Normalized Intensity)',
-                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$'):
+                     sqrt_zlabel = '$\sqrt{Normalized\ Intensity}$'):
         """Return a contour plot of the data
         
         Args:
@@ -1138,7 +1138,7 @@ class Dataset:
                      masscolour='r', pressurecolour='b', 
                      height_ratios=[1, 1, 1, 2], zscale=None, 
                      log_zlabel='log(Normalized Intensity)',
-                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
+                     sqrt_zlabel = '$\sqrt{Normalized\ Intensity}$', 
                      T_range=None, m_range=None, p_range=None,
                      plot_run_nums=False, run_num_ticks=5):
         """Return a contour plot of the data
@@ -1262,7 +1262,7 @@ class Dataset:
                      z_range=None, xyflip=False, Tcolour='g', 
                      height_ratios=None, width_ratios=None, zscale=None, 
                      log_zlabel='log(Normalized Intensity)',
-                     sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
+                     sqrt_zlabel = '$\sqrt{Normalized\ Intensity}$', 
                      grid=None, sharey=True, shareT=True, colourbar=False):
         """Return a contour plot of the data
         
@@ -1548,7 +1548,7 @@ class Dataset:
                         y_range=None, z_range=None, xyflip=False, 
                         Tcolour='g', height_ratios=None, zscale=None, 
                         log_zlabel='log(Normalized Intensity)',
-                        sqrt_zlabel = '$\sqrt{Normalized Intensity}$', 
+                        sqrt_zlabel = '$\sqrt{Normalized\ Intensity}$', 
                         linecolour='g', vline_colour='w', Tpt_colour='r', 
                         Tpt_size=10, interval=200, save_fname=None):
         """Return a contour plot of the data
