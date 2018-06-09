@@ -765,8 +765,9 @@ class Dataset:
             res.scan_times = np.array(new_scan_times)
             av_arrs = []
             for i, arr in enumerate(other_arrs):
+                new_arr = []
                 if arr.ndim == 1: #x data follows self.scan_times
-                    pass
+                    a_is = idxs
                 elif arr.ndim == 2: #case where x data provided
                     #doesn't account for beam_offs2 (this is a lot
                     #of extra effort for an unlikely use case)
@@ -777,8 +778,27 @@ class Dataset:
                         a_is = [np.searchsorted(arr, t) for t in t_range]
                     else:
                         a_is = [0, len(arr) - 1]
+                    new_ts = []
                 else:
                     raise ValueError("Array %d has >2 columns" % i)
+                i_range = range(a_is[0], a_is[1] + 1 - num)
+                for i in i_range:
+                    if arr.ndim == 1:
+                        new_val = np.mean(np.array([arr[iv] for iv in
+                                                    range(i, i + num)]))
+                    else:
+                        new_t = np.mean(np.array([arr[iv, 0] for iv in 
+                                                  range(i, i + num)]))
+                        new_val = np.mean(np.array([arr[iv, 1] for iv in
+                                                    range(i, i + num)]))
+                    new_ts.append(new_t)
+                    new_arr.append(new_val)
+                if arr.ndim == 1:
+                    av_arrs.append(np.array(new_arr))
+                else:
+                    new_ts = np.array(new_ts).reshape((len(new_ts), 1))
+                    new_arr = np.array(new_arr).reshape((len(new_arr), 1))
+                    av_arrs.append(np.column_stack((new_ts, new_arr)))
         return res, av_arrs
 
     def plot(self, tval, t=None, xlabel=u'd / \u00C5', 
