@@ -251,8 +251,9 @@ class Dataset:
         else:
             indices = [0, len(self.data) - 1]
         if type(y_range) != type(None):
-            i0, i1 = [np.searchsorted(tth[:, 0], tthval) for tthval in
-                      tth_range]
+            i0, i1 = np.searchsorted(self.data[0].values[:, 1], y_range)
+            if i1 >= self.data[0].shape[0]:
+                i1 = self.data[0].shape[0] - 1
             indices += [i0, i1]
         else:
             indices += [0, self.data[0].shape[0] - 1]
