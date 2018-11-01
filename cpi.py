@@ -6,13 +6,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import re
-#from sys import platform
-#from IPython import get_ipython
-#ipy = get_ipython()
-#if platform == 'linux2':
-#    ipy.magic("matplotlib qt5")
-#else:
-#    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
@@ -897,7 +890,8 @@ class Dataset:
                            xlabel=r'$\frac{\Delta d}{d}$',
                            ylabel='Normalized Intensity', figsize=(10, 7), 
                            x_range=None, y_range=None, linecolour=None, 
-                           labels=None, legend=True, legend_loc=0):
+                           labels=None, legend=True, legend_loc=0,
+                           bgd_pts=8):
         """Return plot of delta d over d versus intensity
 
         Args:
@@ -913,6 +907,8 @@ class Dataset:
             labels (list): list of labels (if different from tvalues)
             legend (bool): boolean to determine presence of legend
             legend_loc: location of legend
+            bgd_pts (int): number of points on either side of peak to 
+            use to take a linear background for normalizing intensity
         Returns:
             fig: figure instance
             ax: axes instance
@@ -932,10 +928,10 @@ class Dataset:
             xis.sort()
             data_x = xval[xis[0]:xis[1] + 1]
             data_y = self.data[ti]['y'].values[xis[0]:xis[1] + 1]
-            m, c = np.polyfit(np.concatenate((data_x[:norm_pts], 
-                                              data_x[-norm_pts:])),
-                              np.concatenate((data_y[:norm_pts], 
-                                              data_y[-norm_pts:])), 1)
+            m, c = np.polyfit(np.concatenate((data_x[:bgd_pts], 
+                                              data_x[-bgd_pts:])),
+                              np.concatenate((data_y[:bgd_pts], 
+                                              data_y[-bgd_pts:])), 1)
             data_y = data_y - (data_x * m + c)
             data_y = data_y / data_y.max()
             if type(linecolour) == type(None):
@@ -1266,7 +1262,7 @@ class Dataset:
             ax_rn = ax_cont.twiny()
             ax_rn.set_xlim(ax_cont.get_xlim())
             ax_rn.set_xlabel('Run numbers')
-            tick_is = range(0, len(t2), len(t2) / run_num_ticks)
+            tick_is = range(0, len(t2), len(t2) // run_num_ticks)
             rn_labels = [str(t2[i]) for i in tick_is]
             rn_tick_pos = [t[0][i] for i in tick_is]
             ax_rn.set_xticks(rn_tick_pos)
