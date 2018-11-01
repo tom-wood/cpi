@@ -63,7 +63,7 @@ class PlotDefaults():
         elif param == 'cmap':
             plt.rcParams['image.cmap'] = value
         else:
-            print 'Parameter %s not recognized' % (param)
+            print('Parameter %s not recognized' % (param))
     def setp(self, param, value):
         """Set plotting parameter
 
@@ -84,7 +84,8 @@ class Dataset:
     def __init__(self, filepath, first_file_number, last_file_number,
                  beamline, beam_min=100., bank_num=4, tof=False):
         self.filepath = filepath
-        self.expt_nums = range(first_file_number, last_file_number + 1)
+        self.expt_nums = [n for n in 
+                range(first_file_number, last_file_number + 1)]
         if beamline == 'POLARIS':
             self.beamline = 'Polaris'
         elif beamline == 'GEM':
@@ -202,7 +203,7 @@ class Dataset:
             if len(log_files) > 0:
                 if log_files[0][3] == 'A':
                     fname_pre += 'ARIS00' #hack for new Polaris files
-                    print 'Modified Polaris log filenames'
+                    print('Modified Polaris log filenames')
         else:
             log_files = []
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
@@ -210,8 +211,8 @@ class Dataset:
         ebo_t = None #this is for working out extra beam offs
         for i1, lf in enumerate(log_fnames):
             if re.split(r'\\|/', lf)[-1] not in log_files:
-                print "%s doesn't exist. Try looking in %s for files." \
-                        % (lf, lflocation)
+                print("%s doesn't exist. Try looking in %s for files." \
+                        % (lf, lflocation))
                 return
             log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
@@ -276,10 +277,10 @@ class Dataset:
             #            continue
         T_vals = np.array([np.mean([float(val) for val in run]) for run in
                            T_vals])
-        print '%d runs have some beam off (less than %.1f uA)' % \
-                (len(beam_offs), self.beam_min)
-        print 'Start time = %s' % str(lstarts[0])
-        print 'End time = %s' % str(lends[-1])
+        print('%d runs have some beam off (less than %.1f uA)' % \
+                (len(beam_offs), self.beam_min))
+        print('Start time = %s' % str(lstarts[0]))
+        print('End time = %s' % str(lends[-1]))
         scan_times = [ls - lstarts[0] for ls in lstarts]
         for i, bo in enumerate(beam_offs2):
             scan_times.insert(i + bo[0], bo[1] - lstarts[0])
@@ -339,8 +340,8 @@ class Dataset:
                 result.append('')
                 missing.append(self.expt_nums[i])
                 if print_missing:
-                    print 'File %d is missing' % self.expt_nums[i]
-                    print f
+                    print('File %d is missing' % self.expt_nums[i])
+                    print(f)
         return result
 
     def get_data(self, print_missing=True, dataset=None):
@@ -376,8 +377,8 @@ class Dataset:
                 if i1 not in bo_indices and i not in bo_indices2:
                     self.beam_offs.append(self.expt_nums[i1])
                     self.beam_offs.sort()
-                    print "File %s missing, %d added to beam offs" \
-                            % (f, self.expt_nums[i1])
+                    print("File %s missing, %d added to beam offs" \
+                            % (f, self.expt_nums[i1]))
                 if len(data):
                     data.append(pd.DataFrame({'x' : data[0]['x'].values, 
                                               'y' : \
@@ -396,7 +397,7 @@ class Dataset:
                                       'e' : \
                                     np.zeros(data[marker - 1].shape[0])}))
         if len(data) == 0:
-            print "No datasets found"
+            print("No datasets found")
         self.data = data
         return
 
@@ -413,8 +414,8 @@ class Dataset:
             self.igan_data = igan_number.igan_data
             return
         if len(self.lstarts) == 0:
-            print 'You need to run Dataset.get_scan_times() before \
-                    Dataset.get_igan_data()'
+            print('You need to run Dataset.get_scan_times() before \
+                    Dataset.get_igan_data()')
             return
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 
                   'Sep', 'Oct', 'Nov', 'Dec']
@@ -611,7 +612,7 @@ class Dataset:
                       range(len(self.data))]
         if tval:
             if type(t) == type(None):
-                t = np.array(range(len(self.data)))
+                t = np.arange(len(self.data))
             ti = np.abs(t - tval).argmin()
             self.data[ti].to_csv(fnames[0], index=False, header=False, 
                                  sep=sep)
@@ -829,7 +830,7 @@ class Dataset:
             ax: axes instance
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         if type(tval) == int or type(tval) == float:
             tval = [tval]
         if type(linecolour) == str:
@@ -883,7 +884,7 @@ class Dataset:
             result: list of arrays of delta d over d values
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         if type(dvals) == int or type(dvals) == float:
             dvals = [dvals]
         ti = np.searchsorted(t, tval)
@@ -916,7 +917,7 @@ class Dataset:
             ax: axes instance
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti = np.searchsorted(t, tval)
         xvals = self.get_deltad_over_d(tval, dvals, t=t)
         if x_range is None:
@@ -968,7 +969,7 @@ class Dataset:
             ax: axes instance
         """
         if type(t) == type(None):
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti = np.abs(t - tval).argmin()
         data_x = 2 * np.pi / self.data[ti]['x'].values
         data_y = self.data[ti]['y'].values
@@ -1338,7 +1339,8 @@ class Dataset:
                     gs_row = 1
         #make t the same shape as data_y and data_z
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
+            t = np.meshgrid(np.arange(data_y.shape[1]), 
+                    np.arange(data_y.shape[0]))[0]
         elif t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         #separate out datasets for each contour plot and T for each x_range
@@ -1516,9 +1518,9 @@ class Dataset:
             linecolour (str): colour of plotted line
             interval: interval in ms between each plot"""
         if type(t) == type(None):
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti_start, ti_end = [np.abs(t - tval).argmin() for tval in t_range]
-        t_indices = range(ti_start, ti_end + 1, 1)
+        t_indices = [ti for ti in range(ti_start, ti_end + 1, 1)]
         frames = len(t_indices)
         if type(x_range) == type(None):
             x_range = [np.array([dset['x'].min() for dset in self.data]).min(),
@@ -1704,14 +1706,14 @@ class Dataset:
     def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
         for dset in self.data:
-            print dset.shape
+            print(dset.shape)
     def _get_shapes(self):
         """Used for debugging purposes. Returns shapes of all datasets"""
         return [dset.shape for dset in self.data]
 
 def get_expt_numbers(first_file_number, last_file_number):
     """Return list of experiment numbers"""
-    return range(first_file_number, last_file_number + 1, 1)
+    return list(range(first_file_number, last_file_number + 1, 1))
 
 def get_file_list(filepath):
     """Return list of files at filepath"""
@@ -1765,8 +1767,8 @@ def get_expt_fnames(filepath, expt_numbers, fname_pre='pol', file_extension=None
             result.append('')
             missing.append(expt_numbers[i])
             if print_missing:
-                print 'File %d is missing' % expt_numbers[i]
-                print f
+                print('File %d is missing' % expt_numbers[i])
+                print(f)
     if missing_nums:
         return result, missing
     else:
@@ -1816,7 +1818,7 @@ def plotQ(tval, datasets=None, t=None, first_file_number=None, Q=True,
         if type(filepath) == type(None):
             raise TypeError('filepath has not been specified')
         datasets = []
-        expt_number = range(first_file_number, last_file_number + 1)[ti]
+        expt_number = list(range(first_file_number,last_file_number+1)[ti])
         expt_fnames = []
         if type(file_extensions) == type(None):
             file_extensions = len(bank_nums) * [None]
