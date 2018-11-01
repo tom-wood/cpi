@@ -1,6 +1,5 @@
-#Version 0.4.4-beta
-#27/02/18: brought sum_dsets method into line with cpi (made more 
-#intuitive)
+#Version 0.5.0-beta
+#01/11/18: made python3 compatible
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,13 +8,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import fnmatch
-#from sys import platform
-#from IPython import get_ipython
-#ipy = get_ipython()
-#if platform == 'linux2':
-#    ipy.magic("matplotlib qt5")
-#else:
-#    ipy.magic("matplotlib qt")
 
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['font.size'] = 16
@@ -66,7 +58,7 @@ class PlotDefaults():
         elif param == 'cmap':
             plt.rcParams['image.cmap'] = value
         else:
-            print 'Parameter %s not recognized' % (param)
+            print('Parameter %s not recognized' % (param))
     def setp(self, param, value):
         """Set plotting parameter
 
@@ -89,13 +81,13 @@ class Dataset:
                  psd_suffix='_summed.xye', log_fname=None,
                  wavelength=0.8527, zpe=0):
         self.filepath = filepath
-        self.expt_nums = range(first_file_number, last_file_number + 1)
+        self.expt_nums = list(range(first_file_number, last_file_number+1))
         if detector.lower() == 'mac':
             self.detector = 'mac'
         elif detector.lower() == 'psd':
             self.detector = 'psd'
         else:
-            print 'detector must be "mac" or "psd"'
+            print('detector must be "mac" or "psd"')
         self.mac_suffix = mac_suffix
         self.psd_suffix = psd_suffix
         self.beam_offs = []
@@ -143,8 +135,8 @@ class Dataset:
                     else:
                         result.append('')
                         if print_missing:
-                            print 'File %d is missing' % self.expt_nums[i]
-                            print f
+                            print('File %d is missing' % self.expt_nums[i])
+                            print(f)
                 suppress = len(matches) - 1
         else:
             for i, f in enumerate(fnames_all):
@@ -154,8 +146,8 @@ class Dataset:
                     result.append('')
                     #missing.append(self.expt_nums[i])
                     if print_missing:
-                        print 'File %d is missing' % self.expt_nums[i]
-                        print f
+                        print('File %d is missing' % self.expt_nums[i])
+                        print(f)
         return result
 
     def get_data(self, print_missing=True, scans=True):
@@ -367,7 +359,7 @@ class Dataset:
                       range(len(self.data))]
         if tval:
             if type(t) == type(None):
-                t = np.array(range(len(self.data)))
+                t = np.arange(len(self.data))
             ti = np.abs(t - tval).argmin()
             self.data[ti].to_csv(fnames[0], index=False, header=False, 
                                  sep=sep)
@@ -499,7 +491,7 @@ class Dataset:
             ax: axes instance
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         if type(tval) == int or type(tval) == float:
             tval = [tval]
         if type(linecolour) == str:
@@ -553,7 +545,7 @@ class Dataset:
             result: list of arrays of delta d over d values
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         if type(dvals) == int or type(dvals) == float:
             dvals = [dvals]
         ti = np.searchsorted(t, tval)
@@ -589,7 +581,7 @@ class Dataset:
             ax: axes instance
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti = np.searchsorted(t, tval)
         xvals = self.get_deltad_over_d(tval, dvals, t=t)
         if x_range is None:
@@ -651,7 +643,7 @@ class Dataset:
             ax: axes instance
         """
         if t is None:
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti = np.searchsorted(t, tval)
         if x_range is None:
             x_range = [self.data[0]['x'].iloc[0],
@@ -932,7 +924,8 @@ class Dataset:
                     gs_row = 1
         #make t the same shape as data_y and data_z
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
+            t = np.meshgrid(np.arange(data_y.shape[1]), 
+                    np.arange(data_y.shape[0]))[0]
         elif t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         #separate out datasets for each contour plot and T for each x_range
@@ -1107,9 +1100,9 @@ class Dataset:
             linecolour (str): colour of plotted line
             interval: interval in ms between each plot"""
         if type(t) == type(None):
-            t = np.array(range(len(self.data)))
+            t = np.arange(len(self.data))
         ti_start, ti_end = [np.abs(t - tval).argmin() for tval in t_range]
-        t_indices = range(ti_start, ti_end + 1, 1)
+        t_indices = list(range(ti_start, ti_end + 1, 1))
         frames = len(t_indices)
         if type(x_range) == type(None):
             x_range = [np.array([dset['x'].min() for dset in self.data]).min(),
@@ -1180,7 +1173,8 @@ class Dataset:
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is intensity
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
+            t = np.meshgrid(np.arange(data_y.shape[1]), 
+                    np.arange(data_y.shape[0]))[0]
         elif t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         if x_range:
@@ -1293,7 +1287,7 @@ class Dataset:
     def _print_shapes(self):
         """Used for debugging purposes. Prints shapes of all datasets"""
         for dset in self.data:
-            print dset.shape
+            print(dset.shape)
     def _get_shapes(self):
         """Used for debugging purposes. Returns shapes of all datasets"""
         return [dset.shape for dset in self.data]
