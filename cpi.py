@@ -233,7 +233,8 @@ class Dataset:
                                'TS1_beam_current')
             else:
                 bcs = np.where(log_data.iloc[:, 1].values == 'TS1')
-            beam_currents = log_data.iloc[:, 2].values[bcs]
+            beam_currents = np.array(log_data.iloc[:, 2].values[bcs],
+                    dtype='float64')
             beam_real = np.where(beam_currents > -1)
             beam_currents = beam_currents[beam_real]
             bc_times = log_data.iloc[:, 0].values[bcs][beam_real]
