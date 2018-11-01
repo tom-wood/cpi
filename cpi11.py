@@ -417,10 +417,10 @@ class Dataset:
                 result.append(new_dset)                
         if t is None:
             rns = self.get_run_numbers()[idxs[0]:idxs[1] + 1]
-            t = np.array([rn - rns[0] for rn in rns])
+            new_t = np.array([rn - rns[0] for rn in rns])
         else:
-            t = t[idxs[0]:idxs[1] + 1]
-        t_result = self._sum_mean(t, idxs, sum_num)
+            new_t = t[idxs[0]:idxs[1] + 1]
+        t_result = self._sum_mean(new_t, idxs, sum_num)
         if T is not None:
             T = T[idxs[0]:idxs[1] + 1]
             T_result = self._sum_mean(T, idxs, sum_num)
@@ -431,7 +431,16 @@ class Dataset:
                       wavelength=self.wavelength, zpe=self.zpe)
         res.data = result
         res.expt_nums = t_result
-        if T is None:
+        if type(self.Tvals) == type(np.array([])) and \
+                len(self.Tvals):
+            new_T = self._sum_mean(self.Tvals[idxs[0]:idxs[1] + 1], 
+                    idxs, sum_num)
+            res.Tvals = np.array(new_T)
+        if T is None and t is None:
+            return res
+        elif T is not None and t is None:
+            return res, T_result
+        elif t is not None and T is None:
             return res, t_result
         else:
             return res, t_result, T_result
