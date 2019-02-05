@@ -801,7 +801,8 @@ class Dataset:
              ylabel='Normalized Intensity', figsize=(10, 7), x_range=None, 
              y_range=None, linecolour=None, labels=None, legend=True,
              legend_loc=0, xclip=True, normalize=False, 
-             waterfall_offset_x=0, waterfall_offset_y=0):
+             waterfall_offset_x=0, waterfall_offset_y=0,
+             auto_offset_y=False):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -820,10 +821,14 @@ class Dataset:
             normalize (bool): whether to normalize data or not
             waterfall_offset_x: for plotting waterfall plots, x offset
             waterfall_offset_y: for plotting waterfall plots, y offset
+            auto_offset_y (bool): whether to automatically offset y or
+            not; will override waterfall_offset_y regardless of value.
         Returns:
             fig: figure instance
             ax: axes instance
         """
+        if auto_offset_y:
+            waterfall_offset_y = 0
         if t is None:
             t = np.arange(len(self.data))
         if type(tval) == int or type(tval) == float:
@@ -835,6 +840,7 @@ class Dataset:
         tis = [np.abs(t - tv).argmin() for tv in tval]
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
+        max_y = 0 #for auto_offset_y
         for i, ti in enumerate(tis):
             if xclip and type(x_range) != type(None):
                 xis = [np.abs(self.data[ti]['x'].values - xr).argmin() 
@@ -852,6 +858,8 @@ class Dataset:
                         (data_y - data_y.min()).max()
             data_x += (waterfall_offset_x * i)
             data_y += (waterfall_offset_y * i)
+            if auto_offset_y:
+                data_y += (max_y - data_y.min())
             if type(linecolour) == type(None):
                 ax.plot(data_x, data_y, label=labels[i])
             else:
