@@ -373,7 +373,9 @@ class Dataset:
     def sum_dsets(self, sum_num, file_range=None, t=None, T=None):
         """Return mean summed datasets (and times) for sum_num interval
         Args:
-            sum_num (int): file range within which to sum data
+            sum_num (int): number of patterns to sum over
+            file_range: file range (list of two inclusive file numbers) 
+            within which to sum data.
             t (arr): time array
             T (arr): temperature array
         Returns:
