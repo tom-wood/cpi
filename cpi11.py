@@ -480,7 +480,7 @@ class Dataset:
              y_range=None, linecolour=None, labels=None, legend=True,
              legend_loc=0, xclip=True, normalize=False, 
              waterfall_offset_x=0, waterfall_offset_y=0,
-             auto_offset_y=False):
+             auto_offset_y=False, auto_label=None, auto_label_offsets=0.1):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -501,6 +501,12 @@ class Dataset:
             waterfall_offset_y: for plotting waterfall plots, y offset
             auto_offset_y (bool): whether to automatically offset y or
             not; will override waterfall_offset_y regardless of value.
+            auto_label (str): if given value of 'left' or 'right', legend 
+            is suppressed and labels are plotted on the relevant side of
+            the pattern.
+            auto_label_offsets (float or list of floats): fraction(s) of 
+            the way up each diffraction pattern that the label will be
+            plotted (requires auto_label to be set).
         Returns:
             fig: figure instance
             ax: axes instance
@@ -515,6 +521,10 @@ class Dataset:
             linecolour = [linecolour]
         if type(labels) == type(None):
             labels = [str(tv) for tv in tval]
+        if auto_label:
+            legend = False
+            if type(auto_label_offsets) == float:
+                auto_label_offsets = [auto_label_offsets for l in labels]
         tis = [np.abs(t - tv).argmin() for tv in tval]
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
@@ -539,11 +549,26 @@ class Dataset:
             if auto_offset_y:
                 data_y += (max_y - data_y.min())
             if type(linecolour) == type(None):
-                ax.plot(data_x, data_y, label=labels[i])
+                line,  = ax.plot(data_x, data_y, label=labels[i])
             else:
-                ax.plot(data_x, data_y, color=linecolour[i], 
-                        label=labels[i])
+                line,  = ax.plot(data_x, data_y, color=linecolour[i], 
+                                 label=labels[i])
             max_y = data_y.max()
+            if auto_label:
+                min_y = data_y.min()
+                if type(x_range) == type(None):
+                    min_x = data_x.min()
+                    max_x = data_x.max()
+                else:
+                    min_x = x_range[0]
+                    max_x = x_range[1]
+                ypos = auto_label_offsets[i] * (max_y - min_y) + min_y
+                if auto_label == 'left':
+                    xpos = 0.05 * (max_x - min_x) + min_x
+                else:
+                    xpos = 0.95 * (max_x - min_x) + min_x
+                lc = line.get_color()
+                ax.text(xpos, ypos, labels[i], color=lc)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         if legend:
