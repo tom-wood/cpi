@@ -566,11 +566,11 @@ class Dataset:
                     max_x = x_range[1]
                 ypos = auto_label_offsets[i] * (max_y - min_y) + min_y
                 if auto_label == 'left':
-                    xpos = 0.05 * (max_x - min_x) + min_x
+                    xpos = 0.02 * (max_x - min_x) + min_x
                 else:
-                    xpos = 0.95 * (max_x - min_x) + min_x
+                    xpos = 0.98 * (max_x - min_x) + min_x
                 lc = line.get_color()
-                ax.text(xpos, ypos, labels[i], color=lc)
+                ax.text(xpos, ypos, labels[i], color=lc, ha=auto_label)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         if legend:
