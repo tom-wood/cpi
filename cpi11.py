@@ -480,7 +480,8 @@ class Dataset:
              y_range=None, linecolour=None, labels=None, legend=True,
              legend_loc=0, xclip=True, normalize=False, 
              waterfall_offset_x=0, waterfall_offset_y=0,
-             auto_offset_y=False, auto_label=None, auto_label_offsets=0.1):
+             auto_offset_y=False, auto_label=None, auto_label_offsets=0.1,
+             no_y_ticks=False):
         """Return a 2D plot of the diffraction data
         
         Args:
@@ -507,6 +508,7 @@ class Dataset:
             auto_label_offsets (float or list of floats): fraction(s) of 
             the way up each diffraction pattern that the label will be
             plotted (requires auto_label to be set).
+            no_y_ticks (bool): whether to suppress y ticks
         Returns:
             fig: figure instance
             ax: axes instance
@@ -577,6 +579,9 @@ class Dataset:
             ax.set_xlim(x_range[0], x_range[1])
         if type(y_range) != type(None):
             ax.set_ylim(y_range[0], y_range[1])
+        if no_y_ticks:
+            ax.set_yticks([])
+            ax.set_yticklabels([])
         fig.tight_layout() 
         return fig, ax
 
