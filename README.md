@@ -95,9 +95,10 @@ a run and a range of d values (useful for comparing strain effects).
 17. ```plot_deltad_over_d()```: Plots deltad over d for strain comparison.
 18. ```plotQ()```: plots using Q rather than d.
 19. ```contour_plot()```: will give a contour plot of the diffraction data.
-20. ```contour_temp()```: requires ```T``` argument (should use 
-```Dataset.T_vals``` if possible) and gives contour plot of the diffraction
-data with a plot of temperature above it.
+20. ```contour_plot_log()```: requires ```T``` argument (should use 
+output from ```get_from_log``` if possible) and gives contour plot of the 
+diffraction data with a plot of log file information (typically temperature,
+but could be flow, vacuum etc.) above it.
 21. ```contour_igan()```: will give a contour plot along with the IGAn 
 pressure, mass and temperature readings.
 22. ```contour_mult()```: will plot multiple contour plots (with shared x

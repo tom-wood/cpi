@@ -1093,18 +1093,20 @@ class Dataset:
         plt.tight_layout()
         return fig, ax, cbar
         
-    def contour_temp(self, T, t=None, xlabel='Run number', 
-                     ylabel=u'd / \u00C5', ylabel2=u'Temperature / \u00B0C',
+    def contour_plot_log(self, T, t=None, xlabel='Run number', 
+                     ylabel=u'd / \u00C5', 
+                     ylabel2=u'Temperature / \u00B0C',
                      zlabel='Normalized Intensity', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
                      z_range=None, yflip=False, Tcolour='g', 
                      height_ratios=[1, 2], zscale=None,
                      log_zlabel='log(Normalized Intensity)',
                      sqrt_zlabel = '$\sqrt{Normalized\ Intensity}$'):
-        """Return a contour plot of the data
+        """Return a contour plot of the data with an extra log plot
         
         Args:
-            T: temperature array
+            T: array with time data in the first column and log data in 
+            the second column (as per get_from_log method).
             t: array of time/run number values, can be 1D or 2D
             xlabel: label for x axis
             ylabel: label for y axis
@@ -1125,13 +1127,14 @@ class Dataset:
 
         Returns:
             fig: figure instance
-            ax1: temperature line plot axes
+            ax1: log line plot axes
             ax2: contour plot axes
             cbar: colourbar instance
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
         if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), np.arange(data_y.shape[0]))[0]
+            t = np.meshgrid(np.arange(data_y.shape[1]), 
+                            np.arange(data_y.shape[0]))[0]
         elif t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
         if x_range:
@@ -1139,8 +1142,11 @@ class Dataset:
             t = t[:, i0:i1 + 1]
             data_y = data_y[:, i0:i1 + 1]
             data_z = data_z[:, i0:i1 + 1]
+            Ti0, Ti1 = np.searchsorted(T[:, 0], x_range)
+            T = T[Ti0:Ti1, :]
         if y_range:
-            i0, i1 = [np.abs(data_y[:, 0] - val).argmin() for val in y_range]
+            i0, i1 = [np.abs(data_y[:, 0] - val).argmin() for val in 
+                      y_range]
             t = t[i0:i1 + 1, :]
             data_y = data_y[i0:i1 + 1, :]
             data_z = data_z[i0:i1 + 1, :]
@@ -1162,7 +1168,7 @@ class Dataset:
         ax2.tick_params(which='both', top=False, right=False, 
                         direction='out')
         ax2.set_xlim(t[0, 0], t[0, -1])
-        ax1.plot(t[0, :], T, color=Tcolour)
+        ax1.plot(T[:, 0], T[:, 1], color=Tcolour)
         ax1.set_ylabel(ylabel2)
         ax1.tick_params(which='both', top=False, right=False, 
                         direction='out')
