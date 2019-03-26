@@ -49,8 +49,6 @@ method).
 than ```beam_min``` (from ```get_scan_times``` method).
 12. ```beam_offs2```: list of beam offs (when there has been a break in the
 log files; from ```get_scan_times``` method).
-13. ```Tvals```: list of temperature values for each run number (from 
-```get_scan_times``` method).
 14. ```data```: list of pandas Dataframes for each run with x, y and e
 values (from ```get_data``` method).
 15. ```igan_data```: array of data from the IGAn (from 
@@ -59,9 +57,8 @@ values (from ```get_data``` method).
 #### Methods
 And the following methods:
 1. ```get_scan_times()```: this method loads scan times from .log files
-within ```Dataset.filepath```. If ```Tstring``` is given a value then 
-temperature values will be read from the log files as well. Beam offs should
-be easily dealt with using this method.
+within ```Dataset.filepath```. Beam offs should be easily dealt with using 
+this method.
 2. ```get_run_numbers()```: returns an array of run numbers (accounting for
 beam off periods).
 3. ```get_expt_fnames_all()```: returns a list of all experiment file names 

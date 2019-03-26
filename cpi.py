@@ -94,8 +94,6 @@ class Dataset:
         self.av_bcs = []
         self.beam_offs = []
         self.beam_offs2 = []
-        self.beam_offs3 = []
-        self.T_vals = []
 
     def get_from_log(self, strings):
         """Return all time and values for string within log files
@@ -157,14 +155,10 @@ class Dataset:
                   enumerate(s_tvals)]
         return result
 
-    def get_scan_times(self, Tstring=None, beam_off_time=120,
-                       dataset=None): 
+    def get_scan_times(self, beam_off_time=120, dataset=None): 
         """Assign log starts, ends, T and beam current attributes
         
         Args:
-            Tstring: if temperature wanted from the log files; set to True
-            to use default (only tested on Polaris) or to string if 
-            bespoke needed.
             beam_off_time: time after which to consider the beam as off
             in seconds (should be longer than single scan time).
             dataset: Dataset from which to get values (to save on memory
@@ -177,10 +171,9 @@ class Dataset:
             self.av_bcs = dataset.av_bcs
             self.beam_offs = dataset.beam_offs
             self.beam_offs2 = dataset.beam_offs2
-            self.T_vals = dataset.T_vals
             return
-        lstarts, lends, T_vals, beam_offs, av_bcs, beam_offs2, beam_offs3 \
-                = [], [], [], [], [], [], []
+        lstarts, lends, beam_offs, av_bcs, beam_offs2, \
+                = [], [], [], [], [] 
         if self.beamline == 'Polaris':
             fname_pre = 'POL'
             lflocation = r'\\isis\inst$\ndxpolaris\Instrument\data'
@@ -211,16 +204,6 @@ class Dataset:
                                    names=['Time', 'String', 'Value'])
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
             lends.append(np.datetime64(log_data.iloc[-1, 0]))
-            if Tstring:
-                if type(Tstring) != type(''):
-                    if self.beamline == 'Polaris' and max(self.expt_nums)\
-                       > 100000:
-                        Tstring = 'Temp_2'
-                    else:
-                        Tstring = 'temp2'
-                T_vals.append(log_data.iloc[:, 2].values\
-                              [np.where(log_data.iloc[:, 1].values\
-                                        == Tstring)])
             if self.beamline == 'Polaris' and max(self.expt_nums) > 100000:
                 bcs = np.where(log_data.iloc[:, 1].values == \
                                'TS1_beam_current')
@@ -247,30 +230,6 @@ class Dataset:
                     beam_offs2.append((i1, lends[i1 - 1]))
                     beam_offs2.append((i1, lstarts[i1] - \
                                       np.timedelta64(beam_off_time, 's')))
-            #the below is code for partial beam_on log files
-            #for i2, bc in enumerate(beam_currents):
-            #    if float(bc) < self.beam_min:
-            #        if i2 == 0:
-            #            start_marker = 1
-            #        if ebo_t:
-            #            continue
-            #        else:
-            #            ebo_t = bc_times[i2]
-            #            if i2 != 0: #i.e. beam offs won't be inserted here
-            #                start_marker = 0
-            #    else:
-            #        if ebo_t:
-            #            time_diff = (np.datetime64(bc_times[i2]) - \
-            #                    np.datetime64(ebo_t)) / \
-            #                    np.timedelta64(1, 's')
-            #            if start_marker and time_diff > beam_off_time:
-            #                beam_offs3.append((i1, [np.datetime64(ebo_t), 
-            #                                np.datetime64(bc_times[i2])]))
-            #            ebo_t = None
-            #        else:
-            #            continue
-        T_vals = np.array([np.mean([float(val) for val in run]) for run in
-                           T_vals])
         print('%d runs have some beam off (less than %.1f uA)' % \
                 (len(beam_offs), self.beam_min))
         print('Start time = %s' % str(lstarts[0]))
@@ -286,8 +245,6 @@ class Dataset:
         self.av_bcs = av_bcs
         self.beam_offs = beam_offs
         self.beam_offs2 = beam_offs2
-        if Tstring:
-            self.T_vals = T_vals
         return
 
     def get_run_numbers(self):
@@ -680,10 +637,6 @@ class Dataset:
             new_st = self._sum_mean(self.scan_times[idxs[0]:idxs[1] + 1],
                                     idxs, sum_num)
             res.scan_times = np.array(new_st)
-        if type(self.T_vals) == type(np.array([])) and len(self.T_vals):
-            new_T = self._sum_mean(self.T_vals[idxs[0]:idxs[1] + 1], idxs,
-                                   sum_num)
-            res.T_vals = np.array(new_T)
         if T is None and t is None:
             return res
         elif T is not None and t is None:
