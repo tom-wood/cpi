@@ -1063,7 +1063,7 @@ class Dataset:
             t: array of time/run number values, can be 1D or 2D
             xlabel: label for x axis
             ylabel: label for y axis
-            ylabel: label for temperature plot
+            ylabel2: label for log data plot
             zlabel: label for colour bar
             colour_num: number of colours in colour bar
             figsize: size of the figure (inches by inches)
