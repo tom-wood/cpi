@@ -134,7 +134,7 @@ class Dataset:
             if re.split(r'\\|/', lf)[-1] not in log_files:
                 print("%s doesn't exist. Try looking in %s for files." \
                         % (lf, lflocation))
-                return
+                continue
             log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
             if first_log:
@@ -144,8 +144,6 @@ class Dataset:
                 s_is = np.where(log_data.iloc[:, 1].values == s)
                 s_tvals[i_s].append((log_data.values[:, 0][s_is]))
                 s_vals[i_s].append(log_data.values[:, 2][s_is])
-        #if True:
-        #    return s_tvals, s_vals
         s_tvals = [np.concatenate([np.array([(np.datetime64(s0) - lstart)/\
                      np.timedelta64(3600, 's') for s0 in s1]) 
                                    for s1 in s2]) for s2 in s_tvals]
