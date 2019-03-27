@@ -197,7 +197,7 @@ class Dataset:
             if re.split(r'\\|/', lf)[-1] not in log_files:
                 print("%s doesn't exist. Try looking in %s for files." \
                         % (lf, lflocation))
-                return
+                continue
             log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
             lstarts.append(np.datetime64(log_data.iloc[0, 0]))
