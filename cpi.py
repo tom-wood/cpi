@@ -1044,8 +1044,7 @@ class Dataset:
         plt.tight_layout()
         return fig, ax, cbar
         
-    def contour_plot_log(self, T, t=None, xlabel='Run number', 
-                     ylabel=u'd / \u00C5', 
+    def contour_plot_log(self, T, t=None, xlabel=None, ylabel=None,
                      ylabel2=u'Temperature / \u00B0C',
                      zlabel='Normalized Intensity', colour_num=20, 
                      figsize=(10, 7), x_range=None, y_range=None, 
@@ -1083,11 +1082,24 @@ class Dataset:
             cbar: colourbar instance
         """
         data_y, data_z = self.data_xy() #data_y is 2theta, data_z is I(2th)
-        if type(t) == type(None):
-            t = np.meshgrid(np.arange(data_y.shape[1]), 
-                            np.arange(data_y.shape[0]))[0]
+        if t is None:
+            if len(self.scan_times):
+                t = np.meshgrid(self.scan_times, 
+                                np.arange(data_y.shape[0]))[0]
+                if xlabel is None:
+                    xlabel = 'Time / h'
+            else:
+                t = np.meshgrid(np.arange(data_y.shape[1]), 
+                                np.arange(data_y.shape[0]))[0]
+                if xlabel is None:
+                    xlabel = 'Run number'
         elif t.ndim == 1:
             t = np.meshgrid(t, np.arange(data_y.shape[0]))[0]
+        if ylabel is None:
+            if self.tof:
+                ylabel = 'Time of flight / $\mu$s'
+            else:
+                ylabel = u'd / \u00C5' 
         if x_range:
             i0, i1 = [np.abs(t[0, :] - val).argmin() for val in x_range]
             t = t[:, i0:i1 + 1]
