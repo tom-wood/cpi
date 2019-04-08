@@ -193,10 +193,12 @@ class Dataset:
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
                       self.expt_nums]
         ebo_t = None #this is for working out extra beam offs
+        mli = 0 #this is for mitigating for missing log files
         for i1, lf in enumerate(log_fnames):
             if re.split(r'\\|/', lf)[-1] not in log_files:
                 print("%s doesn't exist. Try looking in %s for files." \
                         % (lf, lflocation))
+                mli += 1
                 continue
             log_data = pd.read_csv(lf, header=None, delim_whitespace=True,
                                    names=['Time', 'String', 'Value'])
@@ -218,15 +220,15 @@ class Dataset:
             av_bcs.append(av_bc)
             if av_bc < self.beam_min:
                 beam_offs.append(self.expt_nums[i1])
-                if (lends[i1] - lstarts[i1]) / np.timedelta64(1, 's') >\
-                   beam_off_time:
-                    beam_offs2.append((i1 + 1, lends[i1]))
+                if (lends[i1-mli] - lstarts[i1-mli]) / \
+                        np.timedelta64(1, 's') > beam_off_time:
+                    beam_offs2.append((i1 + 1, lends[i1-mli]))
             #now work out if a long time between lstart and previous lend
             if i1:
-                if (lstarts[i1] - lends[i1 - 1]) / np.timedelta64(1, 's') >\
-                   beam_off_time:
-                    beam_offs2.append((i1, lends[i1 - 1]))
-                    beam_offs2.append((i1, lstarts[i1] - \
+                if (lstarts[i1-mli] - lends[i1-mli-1]) / \
+                        np.timedelta64(1, 's') > beam_off_time:
+                    beam_offs2.append((i1, lends[i1-mli-1]))
+                    beam_offs2.append((i1, lstarts[i1-mli] - \
                                       np.timedelta64(beam_off_time, 's')))
         print('%d runs have some beam off (less than %.1f uA)' % \
                 (len(beam_offs), self.beam_min))
