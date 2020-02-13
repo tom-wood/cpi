@@ -107,6 +107,33 @@ class Dataset:
             res.log_data_rns = self.log_data_rns[key]
             res.log_data_Ts = self.log_data_Ts[key]
         return res
+
+    def __add__(self, dset):
+        if self.filepath != dset.filepath:
+            print('Warning: filepaths are different; keeping first only')
+        res = Dataset(self.filepath, 0, 1, self.detector, self.mac_suffix,
+                self.psd_suffix, self.log_fname, self.wavelength,
+                self.zpe)
+        res.data = self.data + dset.data
+        res.expt_nums = self.expt_nums + dset.expt_nums
+        if self.Tvals:
+            res.log_data_rns = self.log_data_rns[key]
+            res.log_data_Ts = self.log_data_Ts[key]
+            if dset.Tvals:
+                res.Tvals = np.append(self.Tvals, dset.Tvals)
+                res.log_data_rns = np.append(res.log_data_rns,
+                                             dset.log_data_rns)
+                res.log_data_Ts = np.append(res.log_data_Ts,
+                                             dset.log_data_Ts)
+            else:
+                res.Tvals = self.Tvals
+        else:
+            if dset.Tvals:
+                res.Tvals = dset.Tvals
+                res.log_data_rns = dset.log_data_rns
+                res.log_data_Ts = dset.log_data_Ts
+        return res
+
         
     def get_run_numbers(self):
         """Return array of run numbers"""
