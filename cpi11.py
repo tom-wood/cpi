@@ -254,7 +254,7 @@ class Dataset:
             data_y[:, i] = dset['y'].values[iy0:iy1 + 1]
         return data_x, data_y
     
-    def get_indices(self, rn_range, y_range):
+    def get_indices(self, rn_range, tth_range):
         if type(rn_range) != type(None):
             if rn_range[0] < self.expt_nums[0]:
                 rn_range = [rn + self.expt_nums[0] for rn in rn_range]
@@ -262,8 +262,8 @@ class Dataset:
                        in rn_range]
         else:
             indices = [0, len(self.data) - 1]
-        if type(y_range) != type(None):
-            i0, i1 = np.searchsorted(self.data[0].values[:, 1], y_range)
+        if type(tth_range) != type(None):
+            i0, i1 = np.searchsorted(self.data[0].values[:, 0], tth_range)
             if i1 >= self.data[0].shape[0]:
                 i1 = self.data[0].shape[0] - 1
             indices += [i0, i1]
@@ -271,75 +271,75 @@ class Dataset:
             indices += [0, self.data[0].shape[0] - 1]
         return indices
 
-    def get_max_intensity(self, rn_range=None, y_range=None):
+    def get_max_intensity(self, rn_range=None, tth_range=None):
         """Return maximum intensity recorded within a certain range
         
         Args:
             rn_range: list of start and end run numbers (if less than
             actual first run number then added on to that).
-            y_range: list of start and end y values
+            tth_range: list of start and end two theta values
         """
-        indices = self.get_indices(rn_range, y_range)
+        indices = self.get_indices(rn_range, tth_range)
         intensity = self.data_xy(indices)[1]
         return intensity.max()
 
-    def get_min_intensity(self, rn_range=None, y_range=None):
+    def get_min_intensity(self, rn_range=None, tth_range=None):
         """Return minimum intensity recorded within a certain range
         
         Args:
             rn_range: list of start and end run numbers (if less than
             actual first run number then added on to that).
-            y_range: list of start and end y values
+            tth_range: list of start and end two theta values
         """
-        indices = self.get_indices(rn_range, y_range)
+        indices = self.get_indices(rn_range, tth_range)
         intensity = self.data_xy(indices)[1]
         return intensity.min()
 
-    def get_max_intensities(self, rn_range=None, y_range=None,
+    def get_max_intensities(self, rn_range=None, tth_range=None,
                             full_output=True):
-        """Return maximum intensities (and y vals) for certain run numbers
+        """Return maximum intensities (and tth vals) for certain run numbers
         
         Args:
             rn_range: list of start and end run numbers (if less than
             actual first run number then added on to that).
-            y_range: list of start and end y values
-            full_output (bool): if True, return run_number and y values 
-            as well as maximum intensities.
+            tth_range: list of start and end two theta values
+            full_output (bool): if True, return run_number and two theta 
+            values as well as maximum intensities.
         """
-        indices = self.get_indices(rn_range, y_range)
-        yvals, intensity = self.data_xy(indices)
+        indices = self.get_indices(rn_range, tth_range)
+        tthvals, intensity = self.data_xy(indices)
         real_is = intensity.sum(axis=0).nonzero()
         max_is = (np.arange(len(real_is[0])), 
                   intensity.argmax(axis=0)[real_is])
         max_ints = intensity.T[real_is][max_is]
         if not full_output:
             return max_ints
-        max_ys = yvals.T[real_is][max_is]
+        max_tths = tthvals.T[real_is][max_is]
         max_rns = self.get_run_numbers()[real_is]
-        return max_rns, max_ys, max_ints
+        return max_rns, max_tths, max_ints
 
-    def get_min_intensities(self, rn_range=None, y_range=None,
+    def get_min_intensities(self, rn_range=None, tth_range=None,
                             full_output=True):
         """Return minimum intensities (and y vals) for certain run numbers
         
         Args:
             rn_range: list of start and end run numbers (if less than
             actual first run number then added on to that).
-            y_range: list of start and end y values
-            full_output (bool): if True, return run_number and y values 
-            as well as minimum intensities.
+            tth_range: list of start and end two theta values
+            full_output (bool): if True, return run_number and two theta 
+            values as well as minimum intensities.
         """
-        indices = self.get_indices(rn_range, y_range)
-        yvals, intensity = self.data_xy(indices)
+        indices = self.get_indices(rn_range, tth_range)
+        tthvals, intensity = self.data_xy(indices)
         real_is = intensity.sum(axis=0).nonzero()
         min_is = (np.arange(len(real_is[0])), 
                   intensity.argmin(axis=0)[real_is])
         min_ints = intensity.T[real_is][min_is]
         if not full_output:
             return min_ints
-        min_ys = yvals.T[real_is][min_is]
+        min_tths = tthvals.T[real_is][min_is]
         min_rns = self.get_run_numbers()[real_is]
-        return min_rns, min_ys, min_ints
+        return min_rns, min_tths, min_ints
 
     def x_range(self):
         if len(self.data) == 0:
