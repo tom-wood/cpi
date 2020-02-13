@@ -1,5 +1,5 @@
-#Version 0.5.1-beta
-#05/02/2019: added auto_offset_y kwarg to plot method
+#Version 0.5.2-beta
+#13/02/2020: added __getitem__ ability
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -95,6 +95,18 @@ class Dataset:
         self._assign_log_fname(log_fname)
         self.wavelength = wavelength
         self.zpe = zpe
+
+    def __getitem__(self, key):
+        res = Dataset(self.filepath, self.expt_nums[0], self.expt_nums[-1],
+                self.detector, self.mac_suffix, self.psd_suffix,
+                self.log_fname, self.wavelength, self.zpe)
+        res.data = self.data[key]
+        res.expt_nums = self.expt_nums[key]
+        if self.Tvals:
+            res.Tvals = self.Tvals[key]
+            res.log_data_rns = self.log_data_rns[key]
+            res.log_data_Ts = self.log_data_Ts[key]
+        return res
         
     def get_run_numbers(self):
         """Return array of run numbers"""
