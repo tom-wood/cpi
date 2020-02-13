@@ -257,9 +257,12 @@ class Dataset:
     def get_indices(self, rn_range, tth_range):
         if type(rn_range) != type(None):
             if rn_range[0] < self.expt_nums[0]:
-                rn_range = [rn + self.expt_nums[0] for rn in rn_range]
-            indices = [np.searchsorted(self.get_run_numbers(), rn) for rn
-                       in rn_range]
+                indices = rn_range
+                if indices[-1] >= len(self.data):
+                    indices[-1] = len(self.data) - 1
+            else:
+                indices = [np.searchsorted(self.get_run_numbers(), rn) 
+                           for rn in rn_range]
         else:
             indices = [0, len(self.data) - 1]
         if type(tth_range) != type(None):
