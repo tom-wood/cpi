@@ -191,7 +191,6 @@ class Dataset:
             log_files = []
         log_fnames = [self.filepath + fname_pre + str(n) + '.log' for n in
                       self.expt_nums]
-        ebo_t = None #this is for working out extra beam offs
         mli = 0 #this is for mitigating for missing log files
         for i1, lf in enumerate(log_fnames):
             if re.split(r'\\|/', lf)[-1] not in log_files:
@@ -212,9 +211,6 @@ class Dataset:
                     dtype='float64')
             beam_real = np.where(beam_currents > -1)
             beam_currents = beam_currents[beam_real]
-            bc_times = log_data.iloc[:, 0].values[bcs][beam_real]
-            start_marker = 0 #determines whether beam offs at start of log
-                             #file or end (ones in the middle are ignored)
             av_bc = np.mean(np.array([float(bc) for bc in beam_currents]))
             av_bcs.append(av_bc)
             if av_bc < self.beam_min:
