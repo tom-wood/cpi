@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd #used mainly for the pd.read_csv function (very fast)
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes #for colour bars
 from matplotlib import animation #for animation
 import os #for finding out which files are in a directory
 import re
@@ -1138,9 +1137,7 @@ class Dataset:
         ax1.tick_params(which='both', top=False, right=False, 
                         direction='out')
         plt.setp(ax1.get_xticklabels(), visible=False)
-        axins = inset_axes(ax2, width='5%', height='100%', loc=6,
-                           bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
-                           bbox_transform=ax2.transAxes)
+        axins = ax2.inset_axes([1.05, 0., 0.05, 1.])
         cbar = plt.colorbar(cont, cax=axins)
         if zscale == 'log':
             cbar.set_label(log_zlabel, rotation=270, labelpad=20)
@@ -1149,7 +1146,7 @@ class Dataset:
         else:
             cbar.set_label(zlabel, rotation=270, labelpad=20)
         ax2.set_xlim(t[0, 0], t[0, -1])
-        fig.tight_layout(rect=(0, 0, 0.85, 1))
+        fig.tight_layout()
         return fig, ax1, ax2, cbar
     
     def contour_igan(self, xlabel='Time / h', ylabel=u'd / \u00C5', 
@@ -1232,9 +1229,7 @@ class Dataset:
         ax_cont.tick_params(which='both', top=False, right=False, 
                             direction='out')
         ax_cont.set_xlim(t[0, 0], t[0, -1])
-        axins = inset_axes(ax_cont, width='5%', height='100%', loc=6,
-                           bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
-                           bbox_transform=ax_cont.transAxes)
+        axins = ax_cont.inset_axes([1.05, 0., 0.05, 1.])
         cbar = plt.colorbar(cont, cax=axins)
         if zscale == 'log':
             cbar.set_label(log_zlabel, rotation=270, labelpad=20)
@@ -1272,7 +1267,7 @@ class Dataset:
             rn_tick_pos = [t[0][i] for i in tick_is]
             ax_rn.set_xticks(rn_tick_pos)
             ax_rn.set_xticklabels(rn_labels)
-        fig.tight_layout(rect=(0, 0, 0.85, 1))
+        fig.tight_layout()
         if plot_run_nums:
             return fig, ax_cont, ax_m, ax_T, ax_p, ax_rn, cbar
         return fig, ax_cont, ax_m, ax_T, ax_p, cbar
@@ -1489,9 +1484,7 @@ class Dataset:
                 plt.setp(ax.get_xticklabels(), visible=False)
             axes.append(ax)
             if colourbar:
-                axins = inset_axes(ax, width='5%', height='100%', loc=6,
-                                   bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
-                                   bbox_transform=ax.transAxes)
+                axins = ax.inset_axes([1.05, 0., 0.05, 1.])
                 cbar = plt.colorbar(cont, cax=axins)
                 if zscale == 'log':
                     cbar.set_label(log_zlabel, rotation=270, labelpad=20)
@@ -1640,9 +1633,7 @@ class Dataset:
         ax_cont.set_ylabel(ylabel)
         ax_cont.tick_params(which='both', top=False, right=False, direction='out')
         ax_cont.set_xlim(t[0, 0], t[0, -1])
-        axins = inset_axes(ax_cont, width='5%', height='100%', loc=6,
-                           bbox_to_anchor=(1.05, 0., 1, 1), borderpad=0,
-                           bbox_transform=ax_cont.transAxes)
+        axins = ax_cont.inset_axes([1.05, 0., 0.05, 1.])
         cbar = plt.colorbar(cont, cax=axins)
         if zscale == 'log':
             cbar.set_label(log_zlabel, rotation=270, labelpad=20)
