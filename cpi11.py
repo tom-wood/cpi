@@ -133,7 +133,6 @@ class Dataset:
                 res.log_data_rns = dset.log_data_rns
                 res.log_data_Ts = dset.log_data_Ts
         return res
-
         
     def get_run_numbers(self):
         """Return array of run numbers"""
@@ -189,7 +188,7 @@ class Dataset:
                         print(f)
         return result
 
-    def get_data(self, print_missing=True, scans=True):
+    def get_data(self, print_missing=True, scans=True, ignore_missing=False):
         data = []
         first_missing = False
         expt_fnames = self.get_expt_fnames(print_missing, scans)
@@ -204,6 +203,8 @@ class Dataset:
                                         delim_whitespace=True,
                                         names=['x', 'y', 'e']))
             else:
+                if ignore_missing:
+                    continue
                 if len(data):
                     data.append(pd.DataFrame({'x' : data[0]['x'].values, 
                                               'y' : \
