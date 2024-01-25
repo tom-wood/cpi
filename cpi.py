@@ -541,7 +541,7 @@ class Dataset:
             current directory).
             pre_fname (str): precursor string for file names
             post_fname (str): post string for file names (defaults to 
-            '.dat')
+            '.xye')
             sep (str): separator string for columns (defaults to 
             '\t'---tab)
             file_nums (list): list of numbers, defaults to index numbers 
